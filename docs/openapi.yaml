@@ -1,0 +1,54 @@
+openapi: 3.1.0
+info:
+  title: AI Interview Backend API
+  description: This is the OpenAPI specification for the AI Interview Backend.
+  version: 1.0.0
+paths:
+  /interviews:
+    post:
+      summary: Create a new interview
+      description: Create a new interview with basic information and questions.
+      responses:
+        '201':
+          description: Interview created successfully
+    get:
+      summary: Get all interviews
+      description: Retrieve a list of all interviews.
+      responses:
+        '200':
+          description: A list of interviews
+  /interviews/{id}:
+    get:
+      summary: Get interview details
+      description: Retrieve detailed information about a specific interview.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the interview
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Interview details
+  /evaluation:
+    post:
+      summary: Submit interview answers for evaluation
+      description: Submit answers and get AI evaluation results.
+      responses:
+        '200':
+          description: Evaluation results
+  /evaluation/{id}:
+    get:
+      summary: Get evaluation results
+      description: Retrieve the evaluation results for a specific interview.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the evaluation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Evaluation results
