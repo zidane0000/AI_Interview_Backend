@@ -1,0 +1,22 @@
+# Golang specific
+*.exe
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE/editor specific
+.vscode/
+.idea/
+*.swp
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment variables
+.env
