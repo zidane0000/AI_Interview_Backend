@@ -2,7 +2,7 @@
 package config
 
 import (
-	"log"
+	"errors"
 	"os"
 )
 
@@ -12,16 +12,16 @@ type Config struct {
 }
 
 // LoadConfig loads configuration from environment variables
-func LoadConfig() *Config {
+func LoadConfig() (*Config, error) {
 	cfg := &Config{
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		Port:        os.Getenv("PORT"),
 	}
 	if cfg.DatabaseURL == "" {
-		log.Fatal("DATABASE_URL environment variable is required")
+		return nil, errors.New("DATABASE_URL environment variable is required")
 	}
 	if cfg.Port == "" {
 		cfg.Port = "8080" // default port
 	}
-	return cfg
+	return cfg, nil
 }

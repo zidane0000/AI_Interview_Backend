@@ -2,27 +2,26 @@
 package data
 
 import (
-	"log"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var DB *gorm.DB
-
-// InitDB initializes the PostgreSQL connection using GORM
-func InitDB(databaseURL string) {
-	var err error
-	DB, err = gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+// InitDB initializes and returns a PostgreSQL connection using GORM
+func InitDB(databaseURL string) (*gorm.DB, error) {
+	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
+		return nil, err
 	}
+	return db, nil
 }
 
-// CloseDB closes the database connection (if needed)
-func CloseDB() {
-	db, err := DB.DB()
+// CloseDB closes the provided database connection (if needed)
+func CloseDB(db *gorm.DB) {
+	if db == nil {
+		return
+	}
+	dbConn, err := db.DB()
 	if err == nil {
-		db.Close()
+		dbConn.Close()
 	}
 }
