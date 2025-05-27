@@ -5,7 +5,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/zidane0000/AI_Interview_Backend/api"
 	"github.com/zidane0000/AI_Interview_Backend/config"
 	"github.com/zidane0000/AI_Interview_Backend/data"
 )
@@ -26,8 +28,10 @@ func main() {
 	}
 	defer data.CloseDB(db)
 
-	fmt.Printf("Server starting on port %s...\n", cfg.Port)
-	// TODO: Set up router
+	// Set up router
+	router := api.SetupRouter()
 
-	// TODO: Start HTTP server
+	fmt.Printf("Server starting on port %s...\n", cfg.Port)
+	// Start HTTP server
+	log.Fatal(http.ListenAndServe(":"+cfg.Port, router))
 }
