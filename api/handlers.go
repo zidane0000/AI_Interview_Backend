@@ -3,6 +3,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -13,7 +14,9 @@ import (
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("failed to encode JSON: %v", err)
+	}
 }
 
 // Helper: write JSON error response
@@ -24,7 +27,10 @@ func writeJSONError(w http.ResponseWriter, status int, msg string, details ...st
 	if len(details) > 0 {
 		errResp.Details = details[0]
 	}
-	json.NewEncoder(w).Encode(errResp)
+
+	if err := json.NewEncoder(w).Encode(errResp); err != nil {
+		log.Printf("failed to encode JSON: %v", err)
+	}
 }
 
 // CreateInterviewHandler handles POST /interviews

@@ -6,7 +6,7 @@ The AI Interview Backend is designed to provide a robust and scalable backend se
 
 ## How we do this
 
-The backend is built using Go (Golang), a powerful and efficient programming language well-suited for backend development. It follows a microservices architecture to ensure scalability and maintainability. RESTful APIs are exposed to interact with the frontend and integrate with AI models for processing interview data.
+The backend is built using Go (Golang), a powerful and efficient programming language well-suited for backend development. It follows a microservices architecture to ensure scalability and maintainability. The API layer uses the [chi](https://github.com/go-chi/chi) router for flexible, RESTful routing and path parameter extraction. Handlers use well-defined DTOs, robust JSON parsing, validation, and consistent error handling. Logging middleware is included for observability. Comprehensive tests cover handlers, routing, and middleware.
 
 ## OpenAPI Specification
 
@@ -26,7 +26,7 @@ For a more detailed explanation of the architecture, please refer to the README 
 
 The project is organized as follows:
 
-- `api/`: Contains API route definitions and handlers.
+- `api/`: Contains API route definitions (using chi router), handlers, middleware (e.g., logging), DTOs, and comprehensive tests.
 - `business/`: Contains business logic and service implementations.
 - `data/`: Contains database models and data access logic.
 - `ai/`: Contains logic for interacting with AI models.
@@ -34,6 +34,18 @@ The project is organized as follows:
 - `architecture/`: Contains detailed architecture documentation.
 
 This structure ensures modularity and maintainability.
+
+## Development & Testing
+
+- To run all API tests:
+
+  ```powershell
+  go test ./api/...
+  ```
+
+- Continuous Integration (CI) runs lint, build, and test workflows on every push and pull request (see `.github/workflows/`).
+
+- The API is fully covered by tests for handlers, routing, and middleware, ensuring robust and maintainable code.
 
 ## How to start with your frontend
 
