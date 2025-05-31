@@ -11,6 +11,7 @@ import (
 func SetupRouter() http.Handler {
 	r := chi.NewRouter()
 
+	r.Use(CORSMiddleware)
 	r.Use(LoggingMiddleware)
 
 	// Custom NotFound for trailing slash
