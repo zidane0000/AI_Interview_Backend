@@ -27,6 +27,8 @@ type InterviewResponseDTO struct {
 
 type ListInterviewsResponseDTO struct {
 	Interviews []InterviewResponseDTO `json:"interviews"`
+	// TODO: Add pagination support - Total field exists in frontend types but missing here
+	Total int `json:"total"`
 }
 
 // --- Evaluation DTOs ---
@@ -36,11 +38,39 @@ type SubmitEvaluationRequestDTO struct {
 }
 
 type EvaluationResponseDTO struct {
-	ID          string    `json:"id"`
-	InterviewID string    `json:"interview_id"`
-	Score       float64   `json:"score"`
-	Feedback    string    `json:"feedback"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          string            `json:"id"`
+	InterviewID string            `json:"interview_id"`
+	Answers     map[string]string `json:"answers"` // TODO: Add answers field to match frontend expectations
+	Score       float64           `json:"score"`
+	Feedback    string            `json:"feedback"`
+	CreatedAt   time.Time         `json:"created_at"`
+}
+
+// --- Chat DTOs ---
+// TODO: Implement chat-based interview DTOs to support conversational interviews
+type ChatMessageDTO struct {
+	ID        string    `json:"id"`
+	Type      string    `json:"type"` // "ai" or "user"
+	Content   string    `json:"content"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type ChatInterviewSessionDTO struct {
+	ID          string           `json:"id"`
+	InterviewID string           `json:"interview_id"`
+	Messages    []ChatMessageDTO `json:"messages"`
+	Status      string           `json:"status"` // "active" or "completed"
+	CreatedAt   time.Time        `json:"created_at"`
+}
+
+type SendMessageRequestDTO struct {
+	InterviewID string `json:"interview_id"`
+	Message     string `json:"message"`
+}
+
+type SendMessageResponseDTO struct {
+	Message    ChatMessageDTO  `json:"message"`
+	AIResponse *ChatMessageDTO `json:"ai_response,omitempty"`
 }
 
 // --- Error DTO ---

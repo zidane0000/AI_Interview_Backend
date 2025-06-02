@@ -37,15 +37,59 @@ This structure ensures modularity and maintainability.
 
 ## Development & Testing
 
-- To run all API tests:
+### Running Tests
 
-  ```powershell
-  go test ./api/...
-  ```
+The project includes comprehensive unit tests and end-to-end (E2E) tests:
 
-- Continuous Integration (CI) runs lint, build, and test workflows on every push and pull request (see `.github/workflows/`).
+#### Unit Tests Only
+Run unit tests quickly during development:
+```powershell
+# Using PowerShell script
+.\run_unit_tests.ps1
 
-- The API is fully covered by tests for handlers, routing, and middleware, ensuring robust and maintainable code.
+# Or manually
+go test $(go list ./... | Where-Object { $_ -notlike "*e2e*" }) -v
+```
+
+#### All Tests (Unit + E2E)
+Run the complete test suite including E2E tests:
+```powershell
+# Using PowerShell script (recommended)
+.\run_tests.ps1
+
+# Or manually (requires backend server running)
+go test ./... -v
+```
+
+#### E2E Tests Only
+Run only the E2E tests (backend server must be running):
+```powershell
+go test .\e2e\... -v
+```
+
+#### Individual Test Packages
+Run specific test packages:
+```powershell
+go test ./api/...      # API layer tests
+go test ./data/...     # Data layer tests
+go test ./config/...   # Configuration tests
+```
+
+### Test Structure
+- **Unit Tests**: Located alongside source code (`*_test.go` files)
+- **E2E Tests**: Located in `e2e/` directory, require running backend server
+- **Test Helpers**: Common utilities for E2E tests in `e2e/test_helpers.go`
+
+### Continuous Integration
+- CI runs unit tests first, then starts the backend server and runs E2E tests
+- All tests must pass before code can be merged
+- See `.github/workflows/go-test.yml` for the complete CI workflow
+
+### Test Coverage
+- API handlers and routing are fully tested
+- Business logic is covered by unit tests  
+- E2E tests cover complete workflows including chat functionality
+- Concurrent operations and error scenarios are tested
 
 ## How to start with your frontend
 

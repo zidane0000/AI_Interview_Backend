@@ -9,10 +9,55 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: admin
+          POSTGRES_USER: postgres
+          POSTGRES_DB: ai_interview
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - name: Test
-        run: go test ./...
+          
+      - name: Install dependencies
+        run: go mod download
+        
+      - name: Run unit tests
+        run: go test $(go list ./... | grep -v /e2e)
+        
+      - name: Build application
+        run: go build -o ai_interview_backend
+        
+      - name: Start backend server
+        run: |
+          export DATABASE_URL="postgres://postgres:admin@localhost:5432/ai_interview"
+          export PORT=8080
+          ./ai_interview_backend &
+          echo $! > backend.pid
+          sleep 5
+          
+      - name: Wait for server to be ready
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:8080/health; do sleep 1; done'
+          
+      - name: Run E2E tests
+        run: go test ./e2e/...
+        
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f backend.pid ]; then
+            kill $(cat backend.pid) || true
+          fi
