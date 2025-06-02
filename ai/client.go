@@ -2,55 +2,53 @@
 package ai
 
 import (
-	"math/rand"
-	"time"
+	"context"
+	"fmt"
+	"math/rand/v2"
 )
 
-// AIClient configuration and client
+// Legacy AIClient for backward compatibility
 type AIClient struct {
-	apiKey  string
-	baseURL string
-	timeout time.Duration
-	model   string // GPT-4, Claude, Gemini, etc.
-}
-
-// NewAIClient creates a new AI client
-func NewAIClient(apiKey string) *AIClient {
-	return &AIClient{
-		apiKey:  apiKey,
-		baseURL: "https://api.openai.com/v1", // Default to OpenAI
-		timeout: 30 * time.Second,
-		model:   "gpt-3.5-turbo",
-	}
+	enhancedClient *EnhancedAIClient
 }
 
 // Global AI client instance
-var Client = NewAIClient("") // TODO: Initialize with real API key from config
+var Client = NewAutoAIClient()
+
+// NewAutoAIClient initializes the AI client using the best available API key (OpenAI > Gemini > none)
+func NewAutoAIClient() *AIClient {
+	config := NewDefaultAIConfig() // loads from env
+
+	// Priority: OpenAI > Gemini > fallback
+	if config.OpenAIAPIKey != "" {
+		config.DefaultProvider = ProviderOpenAI
+		fmt.Printf("Using OpenAI API key: %s\n", config.OpenAIAPIKey)
+	} else if config.GeminiAPIKey != "" {
+		config.DefaultProvider = ProviderGemini
+		fmt.Printf("Using Gemini API key: %s\n", config.GeminiAPIKey)
+	} else {
+		// No real API key found, fallback to mock or error provider if implemented
+		config.DefaultProvider = "mock" // or leave as is
+		fmt.Println("No valid AI API key found, using mock provider")
+	}
+
+	return &AIClient{
+		enhancedClient: NewEnhancedAIClient(config),
+	}
+}
 
 // GenerateChatResponse generates AI response for conversational interviews
 func (c *AIClient) GenerateChatResponse(conversationHistory []string, userMessage string) (string, error) {
-	// TODO: Replace with real AI API call
-	// For now, use predefined responses to match frontend expectations
+	sessionID := "default-session" // TODO: Use proper session ID from context
 
-	messageCount := len(conversationHistory)/2 + 1 // Count user messages
-
-	responses := []string{
-		"Hello! Welcome to your interview. I'm excited to learn more about you and your background. Let's start with a basic question: Tell me about yourself and your background.",
-		"That's interesting! Can you describe a challenging project you've worked on recently?",
-		"Great! How do you handle working under pressure or tight deadlines?",
-		"I'd like to know more about your technical skills. What technologies are you most comfortable with?",
-		"Can you walk me through your problem-solving approach when facing a difficult technical challenge?",
-		"Tell me about a time when you had to learn something new quickly. How did you approach it?",
-		"What motivates you in your work, and what kind of environment helps you perform your best?",
-		"Do you have any questions about our company, the role, or our team culture?",
-		"Thank you for your comprehensive answers. Our interview is now complete. You'll receive detailed feedback and evaluation results shortly.",
+	// Build context for the AI
+	contextMap := map[string]interface{}{
+		"interview_type": "general",
+		"job_title":      "Software Engineer",
+		"context":        "Interview in progress",
 	}
 
-	if messageCount-1 < len(responses) {
-		return responses[messageCount-1], nil
-	}
-
-	return responses[len(responses)-1], nil
+	return c.enhancedClient.GenerateInterviewResponse(sessionID, userMessage, contextMap)
 }
 
 // ShouldEndInterview determines if the interview should end
@@ -60,8 +58,8 @@ func (c *AIClient) ShouldEndInterview(messageCount int) bool {
 
 // EvaluateAnswers evaluates chat conversation and generates score and feedback
 func (c *AIClient) EvaluateAnswers(questions []string, answers []string) (float64, string, error) {
-	// TODO: Replace with real AI evaluation
-	// For now, generate realistic evaluation based on answer length and content
+	// For now, use simple evaluation logic
+	// TODO: Replace with real AI evaluation using c.enhancedClient.EvaluateAnswers
 
 	if len(answers) == 0 {
 		return 0.0, "No answers provided.", nil
@@ -73,47 +71,80 @@ func (c *AIClient) EvaluateAnswers(questions []string, answers []string) (float6
 	// Generate feedback based on score range
 	var feedback string
 	if score >= 0.9 {
-		feedback = "Excellent performance! You demonstrated strong communication skills and provided comprehensive answers. Your responses showed deep thinking and relevant experience. Continue building on your strengths."
+		feedback = "Excellent performance! You demonstrated strong communication skills and provided comprehensive answers."
 	} else if score >= 0.8 {
-		feedback = "Great interview performance! You provided solid answers and showed good understanding of the topics. Consider providing more specific examples in future interviews to strengthen your responses."
+		feedback = "Great interview performance! You provided solid answers and showed good understanding."
 	} else {
-		feedback = "Good effort in the interview! You covered the basic points well. To improve, try to provide more detailed examples and demonstrate deeper technical knowledge in your responses."
+		feedback = "Good effort! Consider providing more detailed examples in future interviews."
 	}
 
 	return score, feedback, nil
 }
 
-// TODO: Implement question generation from resume
-// - GenerateQuestionsFromResume(resumeText, jobDescription) -> []string
-// - Should extract key skills and experiences from resume
-// - Should tailor questions to job requirements
-// - Should generate diverse question types (technical, behavioral, situational)
+// GenerateQuestionsFromResume generates interview questions based on resume and job description
+func (c *AIClient) GenerateQuestionsFromResume(resumeText, jobDescription, jobTitle string) ([]InterviewQuestion, error) {
+	ctx := context.Background()
 
-// TODO: Implement AI prompt templates
-// - Interview greeting and introduction prompts
-// - Question generation prompts based on context
-// - Evaluation criteria and scoring prompts
-// - Feedback generation prompts with actionable advice
+	req := &QuestionGenerationRequest{
+		JobTitle:        jobTitle,
+		JobDescription:  jobDescription,
+		ResumeContent:   resumeText,
+		InterviewType:   "mixed",
+		NumQuestions:    8,
+		ExperienceLevel: "mid",
+		Difficulty:      "medium",
+	}
 
-// TODO: Add error handling and retry logic
-// - Handle API rate limits and timeouts
-// - Implement exponential backoff for retries
-// - Handle invalid responses and fallback scenarios
-// - Log AI service interactions for debugging
+	resp, err := c.enhancedClient.GenerateQuestions(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
-// TODO: Add response validation and sanitization
-// - Validate AI responses for appropriateness
-// - Filter out potentially biased or inappropriate content
-// - Ensure consistent response format
-// - Handle edge cases like very short or very long responses
+	return resp.Questions, nil
+}
 
-// TODO: Add configuration for different AI providers
-// - Support multiple AI services (OpenAI, Anthropic, Google, local models)
-// - Environment-based configuration switching
-// - Cost optimization and usage tracking
-// - A/B testing capabilities for different models
+// GenerateInterviewQuestions generates questions for a specific interview setup
+func (c *AIClient) GenerateInterviewQuestions(jobTitle, jobDesc string, questionCount int) ([]InterviewQuestion, error) {
+	ctx := context.Background()
 
-// TODO: Add caching for frequently used prompts
-// TODO: Add metrics and monitoring for AI service performance
-// TODO: Add support for streaming responses for real-time chat
-// TODO: Add prompt engineering utilities and testing
+	req := &QuestionGenerationRequest{
+		JobTitle:        jobTitle,
+		JobDescription:  jobDesc,
+		InterviewType:   "general",
+		NumQuestions:    questionCount,
+		ExperienceLevel: "mid",
+		Difficulty:      "medium",
+	}
+
+	resp, err := c.enhancedClient.GenerateQuestions(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Questions, nil
+}
+
+// GetProviderInfo returns information about available AI providers
+func (c *AIClient) GetProviderInfo() map[string]interface{} {
+	info := make(map[string]interface{})
+	providers := c.enhancedClient.GetAvailableProviders()
+
+	for _, providerName := range providers {
+		info[providerName] = GetProviderInfo(providerName)
+	}
+
+	return info
+}
+
+// SwitchProvider changes the active AI provider
+func (c *AIClient) SwitchProvider(providerName string) error {
+	c.enhancedClient.mu.Lock()
+	defer c.enhancedClient.mu.Unlock()
+
+	if _, exists := c.enhancedClient.providers[providerName]; !exists {
+		return fmt.Errorf("provider not available: %s", providerName)
+	}
+
+	c.enhancedClient.config.DefaultProvider = providerName
+	return nil
+}
