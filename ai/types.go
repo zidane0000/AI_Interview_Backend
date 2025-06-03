@@ -10,6 +10,7 @@ import (
 const (
 	ProviderOpenAI = "openai"
 	ProviderGemini = "gemini"
+	ProviderMock   = "mock"
 )
 
 // Message represents a chat message in the conversation

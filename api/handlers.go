@@ -95,18 +95,18 @@ func GetInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		writeJSONError(w, ErrCodeBadRequest, ErrMsgMissingInterviewID)
 		return
+	} // Get interview from memory store
+	interview, err := data.Store.GetInterview(id)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "Interview not found")
+		return
 	}
 
-	// TODO: Implement database lookup by interview ID
-	// TODO: Handle not found cases with proper error response
-	// TODO: Include associated evaluation if exists
-	// TODO: Add access control/authorization if needed
-
 	resp := InterviewResponseDTO{
-		ID:            id,
-		CandidateName: "Sample Name",
-		Questions:     []string{"Q1", "Q2"},
-		CreatedAt:     time.Now(),
+		ID:            interview.ID,
+		CandidateName: interview.CandidateName,
+		Questions:     interview.Questions,
+		CreatedAt:     interview.CreatedAt,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -200,7 +200,7 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate initial AI greeting message
-	aiResponse, err := ai.Client.GenerateChatResponse([]string{}, "")
+	aiResponse, err := ai.Client.GenerateChatResponse([]map[string]string{}, "")
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
 		return
@@ -293,23 +293,40 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save user message")
 		return
-	}
-
-	// Get conversation history for AI context
+	} // Get conversation history for AI context (excluding the current message)
 	messages, err := data.Store.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat history")
 		return
 	}
 
-	// Build conversation history
-	conversationHistory := make([]string, 0)
+	// Check if interview should end BEFORE generating AI response
+	userMessageCount := 0
 	for _, msg := range messages {
-		conversationHistory = append(conversationHistory, msg.Content)
+		if msg.Type == "user" {
+			userMessageCount++
+		}
 	}
 
-	// Generate AI response
-	aiResponse, err := ai.Client.GenerateChatResponse(conversationHistory, req.Message)
+	shouldEndInterview := ai.Client.ShouldEndInterview(userMessageCount)
+
+	// Build structured conversation history excluding the current user message
+	conversationHistory := make([]map[string]string, 0)
+	for _, msg := range messages {
+		// Skip the current user message we just added
+		if msg.ID != userMessage.ID {
+			conversationHistory = append(conversationHistory, map[string]string{
+				"role":    msg.Type,
+				"content": msg.Content,
+			})
+		}
+	} // Generate AI response - use closing context if interview should end
+	var aiResponse string
+	if shouldEndInterview {
+		aiResponse, err = ai.Client.GenerateClosingMessage(conversationHistory, req.Message)
+	} else {
+		aiResponse, err = ai.Client.GenerateChatResponse(conversationHistory, req.Message)
+	}
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
 		return
@@ -332,14 +349,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if interview should end
-	userMessageCount := 0
-	for _, msg := range messages {
-		if msg.Type == "user" {
-			userMessageCount++
-		}
-	}
-	if ai.Client.ShouldEndInterview(userMessageCount) {
+	// Update session status if interview should end
+	if shouldEndInterview {
 		session.Status = "completed"
 		session.UpdatedAt = time.Now()
 		endedAt := time.Now()
@@ -363,10 +374,10 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		Content:   aiMessage.Content,
 		Timestamp: aiMessage.Timestamp,
 	}
-
 	response := SendMessageResponseDTO{
-		Message:    userMessageDTO,
-		AIResponse: &aiMessageDTO,
+		Message:       userMessageDTO,
+		AIResponse:    &aiMessageDTO,
+		SessionStatus: session.Status,
 	}
 
 	writeJSON(w, http.StatusOK, response)

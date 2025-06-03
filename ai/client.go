@@ -22,15 +22,13 @@ func NewAutoAIClient() *AIClient {
 	// Priority: OpenAI > Gemini > fallback
 	if config.OpenAIAPIKey != "" {
 		config.DefaultProvider = ProviderOpenAI
-		fmt.Printf("Using OpenAI API key: %s\n", config.OpenAIAPIKey)
+		config.DefaultModel = "gpt-4o"
+
 	} else if config.GeminiAPIKey != "" {
 		config.DefaultProvider = ProviderGemini
-		fmt.Printf("Using Gemini API key: %s\n", config.GeminiAPIKey)
-	} else {
-		// No real API key found, fallback to mock or error provider if implemented
-		config.DefaultProvider = "mock" // or leave as is
-		fmt.Println("No valid AI API key found, using mock provider")
+		config.DefaultModel = "gemini-2.0-flash"
 	}
+	fmt.Printf("Using AI provider: %s and model: %s\n", config.DefaultProvider, config.DefaultModel)
 
 	return &AIClient{
 		enhancedClient: NewEnhancedAIClient(config),
@@ -38,14 +36,31 @@ func NewAutoAIClient() *AIClient {
 }
 
 // GenerateChatResponse generates AI response for conversational interviews
-func (c *AIClient) GenerateChatResponse(conversationHistory []string, userMessage string) (string, error) {
+func (c *AIClient) GenerateChatResponse(conversationHistory []map[string]string, userMessage string) (string, error) {
 	sessionID := "default-session" // TODO: Use proper session ID from context
 
-	// Build context for the AI
+	// Build context for the AI including conversation history
 	contextMap := map[string]interface{}{
-		"interview_type": "general",
-		"job_title":      "Software Engineer",
-		"context":        "Interview in progress",
+		"interview_type":       "general",
+		"job_title":            "Software Engineer",
+		"context":              "Interview in progress",
+		"conversation_history": conversationHistory,
+	}
+
+	return c.enhancedClient.GenerateInterviewResponse(sessionID, userMessage, contextMap)
+}
+
+// GenerateClosingMessage generates a closing AI response for ending interviews
+func (c *AIClient) GenerateClosingMessage(conversationHistory []map[string]string, userMessage string) (string, error) {
+	sessionID := "default-session" // TODO: Use proper session ID from context
+
+	// Build context for the AI to indicate this is the final message
+	contextMap := map[string]interface{}{
+		"interview_type":       "general",
+		"job_title":            "Software Engineer",
+		"context":              "This is the final message - wrap up the interview professionally and thank the candidate",
+		"conversation_history": conversationHistory,
+		"closing_interview":    true,
 	}
 
 	return c.enhancedClient.GenerateInterviewResponse(sessionID, userMessage, contextMap)

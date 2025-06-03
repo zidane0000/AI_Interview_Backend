@@ -69,8 +69,9 @@ type SendMessageRequestDTO struct {
 }
 
 type SendMessageResponseDTO struct {
-	Message    ChatMessageDTO  `json:"message"`
-	AIResponse *ChatMessageDTO `json:"ai_response,omitempty"`
+	Message       ChatMessageDTO  `json:"message"`
+	AIResponse    *ChatMessageDTO `json:"ai_response,omitempty"`
+	SessionStatus string          `json:"session_status"` // "active" or "completed"
 }
 
 // --- Error DTO ---

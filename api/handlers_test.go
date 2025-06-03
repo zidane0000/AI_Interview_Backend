@@ -64,7 +64,26 @@ func TestGetInterviewHandler_BadRequest(t *testing.T) {
 
 func TestGetInterviewHandler_Success(t *testing.T) {
 	router := SetupRouter()
-	req := httptest.NewRequest("GET", "/interviews/123", nil)
+
+	// Step 1: Create an interview
+	createBody := CreateInterviewRequestDTO{
+		CandidateName: "Test User",
+		Questions:     []string{"Q1", "Q2"},
+	}
+	b, _ := json.Marshal(createBody)
+	createReq := httptest.NewRequest("POST", "/interviews", bytes.NewReader(b))
+	createW := httptest.NewRecorder()
+	router.ServeHTTP(createW, createReq)
+	if createW.Code != http.StatusCreated {
+		t.Fatalf("failed to create interview, got %d", createW.Code)
+	}
+	var createdResp InterviewResponseDTO
+	if err := json.Unmarshal(createW.Body.Bytes(), &createdResp); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+
+	// Step 2: Use the real ID for GET
+	req := httptest.NewRequest("GET", "/interviews/"+createdResp.ID, nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {

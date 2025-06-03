@@ -61,8 +61,8 @@ func NewDefaultAIConfig() *AIConfig {
 	return &AIConfig{
 		OpenAIAPIKey:     getEnvOrDefault("OPENAI_API_KEY", ""),
 		GeminiAPIKey:     getEnvOrDefault("GEMINI_API_KEY", ""),
-		DefaultProvider:  getEnvOrDefault("AI_PROVIDER", ProviderOpenAI),
-		DefaultModel:     getEnvOrDefault("AI_MODEL", "gpt-3.5-turbo"),
+		DefaultProvider:  getEnvOrDefault("AI_DEFAULT_PROVIDER", ProviderMock),
+		DefaultModel:     getEnvOrDefault("AI_DEFAULT_MODEL", "mock-model"),
 		MaxRetries:       getEnvAsIntOrDefault("AI_MAX_RETRIES", 3),
 		RequestTimeout:   getEnvAsDurationOrDefault("AI_REQUEST_TIMEOUT", 60*time.Second),
 		DefaultMaxTokens: getEnvAsIntOrDefault("AI_DEFAULT_MAX_TOKENS", 1000),
@@ -80,11 +80,11 @@ func NewDefaultAIConfig() *AIConfig {
 
 // ValidateConfig validates the AI configuration
 func ValidateConfig(config *AIConfig) error {
-	if config.OpenAIAPIKey == "" && config.GeminiAPIKey == "" {
-		return fmt.Errorf("at least one AI provider API key must be configured")
+	if config.OpenAIAPIKey == "" && config.GeminiAPIKey == "" && config.DefaultProvider != ProviderMock {
+		return fmt.Errorf("at least one AI provider API key must be configured, or use mock provider")
 	}
 
-	if config.DefaultProvider != ProviderOpenAI && config.DefaultProvider != ProviderGemini {
+	if config.DefaultProvider != ProviderOpenAI && config.DefaultProvider != ProviderGemini && config.DefaultProvider != ProviderMock {
 		return fmt.Errorf("invalid default provider: %s", config.DefaultProvider)
 	}
 
@@ -95,6 +95,8 @@ func ValidateConfig(config *AIConfig) error {
 	if config.DefaultProvider == ProviderGemini && config.GeminiAPIKey == "" {
 		return fmt.Errorf("Gemini API key required when using Gemini as default provider")
 	}
+
+	// Mock provider doesn't require API keys
 
 	if config.MaxRetries < 0 {
 		return fmt.Errorf("max retries cannot be negative")
@@ -127,6 +129,9 @@ func GetAvailableProviders(config *AIConfig) []string {
 		providers = append(providers, ProviderGemini)
 	}
 
+	// Mock provider is always available
+	providers = append(providers, ProviderMock)
+
 	return providers
 }
 
@@ -151,6 +156,15 @@ func GetProviderInfo(provider string) map[string]interface{} {
 			"max_tokens":         8192,
 			"website":            "https://ai.google.dev/gemini-api",
 		}
+	case ProviderMock:
+		return map[string]interface{}{
+			"name":               "Mock Provider",
+			"models":             []string{"mock-model"},
+			"supports_vision":    false,
+			"supports_functions": false,
+			"max_tokens":         1000,
+			"website":            "https://localhost/mock",
+		}
 	default:
 		return map[string]interface{}{
 			"error": "Unknown provider",
@@ -166,12 +180,13 @@ func CreateAIProviderFromConfig(providerName string, config *AIConfig) (AIProvid
 			return nil, fmt.Errorf("OpenAI API key not configured")
 		}
 		return NewOpenAIProvider(config.OpenAIAPIKey, config), nil
-
 	case ProviderGemini:
 		if config.GeminiAPIKey == "" {
 			return nil, fmt.Errorf("Gemini API key not configured")
 		}
 		return NewGeminiProvider(config.GeminiAPIKey, config), nil
+	case ProviderMock:
+		return NewMockProvider(), nil
 
 	default:
 		return nil, fmt.Errorf("unknown provider: %s", providerName)
@@ -235,6 +250,8 @@ func GetModelRecommendation(provider, taskType string) string {
 		default:
 			return "gemini-1.5-flash"
 		}
+	case ProviderMock:
+		return "mock-model" // Mock provider always uses mock-model
 	default:
 		return ""
 	}

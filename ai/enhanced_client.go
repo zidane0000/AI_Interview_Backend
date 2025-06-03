@@ -120,20 +120,48 @@ func (c *EnhancedAIClient) GenerateInterviewResponse(sessionID, userMessage stri
 	// Build interview-specific prompt
 	systemPrompt := c.buildInterviewSystemPrompt(contextMap)
 
+	// Start with system message
+	messages := []Message{
+		{
+			Role:      "system",
+			Content:   systemPrompt,
+			Timestamp: time.Now(),
+		},
+	}
+	// Add conversation history if available
+	if historyVal, exists := contextMap["conversation_history"]; exists {
+		if history, ok := historyVal.([]map[string]string); ok {
+			// Add conversation history with proper roles
+			for _, msg := range history {
+				role := msg["role"]
+				content := msg["content"]
+
+				// Convert message type to proper role for AI
+				if role == "user" {
+					role = "user"
+				} else if role == "ai" {
+					role = "assistant"
+				}
+
+				messages = append(messages, Message{
+					Role:      role,
+					Content:   content,
+					Timestamp: time.Now(),
+				})
+			}
+		}
+	}
+
+	// Add current user message
+	messages = append(messages, Message{
+		Role:      "user",
+		Content:   userMessage,
+		Timestamp: time.Now(),
+	})
+
 	// Create chat request
 	req := &ChatRequest{
-		Messages: []Message{
-			{
-				Role:      "system",
-				Content:   systemPrompt,
-				Timestamp: time.Now(),
-			},
-			{
-				Role:      "user",
-				Content:   userMessage,
-				Timestamp: time.Now(),
-			},
-		},
+		Messages:    messages,
 		Model:       c.config.DefaultModel,
 		MaxTokens:   c.config.DefaultMaxTokens,
 		Temperature: c.config.DefaultTemp,
