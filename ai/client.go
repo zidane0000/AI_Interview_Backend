@@ -4,7 +4,6 @@ package ai
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 )
 
 // Legacy AIClient for backward compatibility
@@ -73,27 +72,64 @@ func (c *AIClient) ShouldEndInterview(messageCount int) bool {
 
 // EvaluateAnswers evaluates chat conversation and generates score and feedback
 func (c *AIClient) EvaluateAnswers(questions []string, answers []string) (float64, string, error) {
-	// For now, use simple evaluation logic
-	// TODO: Replace with real AI evaluation using c.enhancedClient.EvaluateAnswers
-
 	if len(answers) == 0 {
 		return 0.0, "No answers provided.", nil
 	}
 
-	// Simple scoring based on answer characteristics
-	score := 0.7 + rand.Float64()*0.25 // Random score between 0.7-0.95
+	// Use the enhanced AI client for real evaluation
+	ctx := context.Background()
 
-	// Generate feedback based on score range
-	var feedback string
-	if score >= 0.9 {
-		feedback = "Excellent performance! You demonstrated strong communication skills and provided comprehensive answers."
-	} else if score >= 0.8 {
-		feedback = "Great interview performance! You provided solid answers and showed good understanding."
-	} else {
-		feedback = "Good effort! Consider providing more detailed examples in future interviews."
+	// Create evaluation request
+	req := &EvaluationRequest{
+		Questions:   questions,
+		Answers:     answers,
+		JobTitle:    "Software Engineer", // Default job title
+		JobDesc:     "General software engineering position",
+		Criteria:    []string{"communication", "technical_knowledge", "problem_solving", "clarity"},
+		DetailLevel: "detailed",
+		Context: map[string]interface{}{
+			"interview_type":  "conversational",
+			"evaluation_type": "chat_based",
+		}}
+
+	// Call enhanced client for evaluation
+	resp, err := c.enhancedClient.EvaluateAnswers(ctx, req)
+	if err != nil {
+		return 0.0, "Evaluation failed", err
 	}
 
-	return score, feedback, nil
+	return resp.OverallScore, resp.Feedback, nil
+}
+
+// EvaluateAnswersWithContext evaluates chat conversation with interview context
+func (c *AIClient) EvaluateAnswersWithContext(questions []string, answers []string, jobTitle, jobDesc string) (float64, string, error) {
+	if len(answers) == 0 {
+		return 0.0, "No answers provided.", nil
+	}
+
+	// Use the enhanced AI client for real evaluation with context
+	ctx := context.Background()
+
+	// Create evaluation request with proper context
+	req := &EvaluationRequest{
+		Questions:   questions,
+		Answers:     answers,
+		JobTitle:    jobTitle,
+		JobDesc:     jobDesc,
+		Criteria:    []string{"communication", "technical_knowledge", "problem_solving", "clarity", "cultural_fit"},
+		DetailLevel: "detailed",
+		Context: map[string]interface{}{
+			"interview_type":  "conversational",
+			"evaluation_type": "chat_based",
+		}}
+
+	// Call enhanced client for evaluation
+	resp, err := c.enhancedClient.EvaluateAnswers(ctx, req)
+	if err != nil {
+		return 0.0, "Evaluation failed", err
+	}
+
+	return resp.OverallScore, resp.Feedback, nil
 }
 
 // GenerateQuestionsFromResume generates interview questions based on resume and job description

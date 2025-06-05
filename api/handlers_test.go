@@ -6,6 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/zidane0000/AI_Interview_Backend/data"
 )
 
 func TestCreateInterviewHandler_Success(t *testing.T) {
@@ -92,24 +95,40 @@ func TestGetInterviewHandler_Success(t *testing.T) {
 }
 
 func TestSubmitEvaluationHandler_Success(t *testing.T) {
+	// First create a valid interview
+	interview := &data.Interview{
+		ID:            "test-interview-123",
+		CandidateName: "Test Candidate",
+		Questions:     []string{"What is your experience?", "Tell me about yourself"},
+		CreatedAt:     time.Now(),
+		UpdatedAt:     time.Now(),
+	}
+	if err := data.Store.CreateInterview(interview); err != nil {
+		t.Fatalf("failed to create interview: %v", err)
+	}
+
 	body := SubmitEvaluationRequestDTO{
-		InterviewID: "abc",
-		Answers:     map[string]string{"Q1": "A1"},
+		InterviewID: "test-interview-123",
+		Answers:     map[string]string{"question_0": "5 years of experience", "question_1": "I am a developer"},
 	}
 	b, _ := json.Marshal(body)
+
+	router := SetupRouter()
 	req := httptest.NewRequest("POST", "/evaluation", bytes.NewReader(b))
 	w := httptest.NewRecorder()
-	SubmitEvaluationHandler(w, req)
+	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200 OK, got %d", w.Code)
 	}
 }
 
 func TestSubmitEvaluationHandler_BadRequest(t *testing.T) {
+	router := SetupRouter()
+
 	// Invalid JSON
 	req := httptest.NewRequest("POST", "/evaluation", bytes.NewReader([]byte("{")))
 	w := httptest.NewRecorder()
-	SubmitEvaluationHandler(w, req)
+	router.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 Bad Request, got %d", w.Code)
 	}
@@ -119,7 +138,7 @@ func TestSubmitEvaluationHandler_BadRequest(t *testing.T) {
 	b, _ := json.Marshal(body)
 	req = httptest.NewRequest("POST", "/evaluation", bytes.NewReader(b))
 	w = httptest.NewRecorder()
-	SubmitEvaluationHandler(w, req)
+	router.ServeHTTP(w, req)
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 Bad Request for missing fields, got %d", w.Code)
 	}
@@ -136,8 +155,22 @@ func TestGetEvaluationHandler_BadRequest(t *testing.T) {
 }
 
 func TestGetEvaluationHandler_Success(t *testing.T) {
+	// First create a valid evaluation
+	evaluation := &data.Evaluation{
+		ID:          "test-evaluation-456",
+		InterviewID: "test-interview-456",
+		Answers:     map[string]string{"question_0": "Test answer"},
+		Score:       0.8,
+		Feedback:    "Good performance",
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	if err := data.Store.CreateEvaluation(evaluation); err != nil {
+		t.Fatalf("failed to create evaluation: %v", err)
+	}
+
 	router := SetupRouter()
-	req := httptest.NewRequest("GET", "/evaluation/456", nil)
+	req := httptest.NewRequest("GET", "/evaluation/test-evaluation-456", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	if w.Code != http.StatusOK {

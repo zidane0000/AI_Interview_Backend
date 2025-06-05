@@ -123,20 +123,62 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Integrate with AI service for evaluation
-	// TODO: Validate interview exists before creating evaluation
-	// TODO: Implement scoring algorithm based on answer quality
-	// TODO: Generate detailed feedback with specific suggestions
-	// TODO: Support different evaluation criteria based on interview type
-	// TODO: Store answers properly in the response (currently missing)
+	// Validate interview exists before creating evaluation
+	interview, err := data.Store.GetInterview(req.InterviewID)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "Interview not found")
+		return
+	}
+
+	// Convert answers map to arrays for AI evaluation
+	questions := interview.Questions
+	answers := make([]string, len(questions))
+
+	// Map answers from the request to the questions order
+	for i := range questions {
+		answerKey := fmt.Sprintf("question_%d", i)
+		if answer, exists := req.Answers[answerKey]; exists {
+			answers[i] = answer
+		} else {
+			answers[i] = "" // Empty answer if not provided
+		}
+	}
+
+	// Generate AI evaluation using the same method as chat evaluation
+	jobTitle := "Software Engineer" // Default job title
+	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
+
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobTitle, jobDesc)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
+		return
+	}
+
+	// Create evaluation record
+	evaluationID := data.GenerateID()
+	evaluation := &data.Evaluation{
+		ID:          evaluationID,
+		InterviewID: req.InterviewID,
+		Answers:     req.Answers,
+		Score:       score,
+		Feedback:    feedback,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+
+	err = data.Store.CreateEvaluation(evaluation)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to save evaluation")
+		return
+	}
 
 	resp := EvaluationResponseDTO{
-		ID:          "sample-eval-id", // TODO: generate real ID
+		ID:          evaluationID,
 		InterviewID: req.InterviewID,
-		Answers:     req.Answers, // TODO: Include answers in response
-		Score:       0.95,
-		Feedback:    "Sample feedback",
-		CreatedAt:   time.Now(),
+		Answers:     req.Answers,
+		Score:       score,
+		Feedback:    feedback,
+		CreatedAt:   evaluation.CreatedAt,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -149,18 +191,20 @@ func GetEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Implement database lookup by evaluation ID
-	// TODO: Include associated interview data if needed
-	// TODO: Handle not found cases with proper error response
-	// TODO: Add access control/authorization if needed
+	// Get evaluation from database
+	evaluation, err := data.Store.GetEvaluation(id)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "Evaluation not found")
+		return
+	}
 
 	resp := EvaluationResponseDTO{
-		ID:          id,
-		InterviewID: "sample-interview-id",
-		Answers:     map[string]string{}, // TODO: Include actual answers
-		Score:       0.95,
-		Feedback:    "Sample feedback",
-		CreatedAt:   time.Now(),
+		ID:          evaluation.ID,
+		InterviewID: evaluation.InterviewID,
+		Answers:     evaluation.Answers,
+		Score:       evaluation.Score,
+		Feedback:    evaluation.Feedback,
+		CreatedAt:   evaluation.CreatedAt,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -453,11 +497,17 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to update session")
 		return
 	}
-
 	// Get all messages for evaluation
 	messages, err := data.Store.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat messages")
+		return
+	}
+
+	// Get interview details for context
+	interview, err := data.Store.GetInterview(session.InterviewID)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to get interview details")
 		return
 	}
 
@@ -477,8 +527,11 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Generate evaluation using AI service
-	score, feedback, err := ai.Client.EvaluateAnswers(questions, userAnswers)
+	// Generate evaluation using AI service with interview context
+	jobTitle := "Software Engineer" // Default job title
+	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
+
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobTitle, jobDesc)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return
