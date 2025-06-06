@@ -15,7 +15,11 @@ import (
 
 // clearMemoryStore clears all data from the memory store for test isolation
 func clearMemoryStore() {
-	data.Store = data.NewMemoryStore()
+	var err error
+	data.GlobalStore, err = data.NewHybridStore(data.BackendMemory, "")
+	if err != nil {
+		panic("Failed to initialize test store: " + err.Error())
+	}
 }
 
 func TestCreateInterviewHandler_Success(t *testing.T) {
@@ -322,11 +326,10 @@ func TestSubmitEvaluationHandler_Success(t *testing.T) {
 	interview := &data.Interview{
 		ID:            "test-interview-123",
 		CandidateName: "Test Candidate",
-		Questions:     []string{"What is your experience?", "Tell me about yourself"},
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		Questions:     []string{"What is your experience?", "Tell me about yourself"}, CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
-	if err := data.Store.CreateInterview(interview); err != nil {
+	if err := data.GlobalStore.CreateInterview(interview); err != nil {
 		t.Fatalf("failed to create interview: %v", err)
 	}
 
@@ -386,10 +389,9 @@ func TestGetEvaluationHandler_Success(t *testing.T) {
 		Answers:     map[string]string{"question_0": "Test answer"},
 		Score:       0.8,
 		Feedback:    "Good performance",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		CreatedAt:   time.Now(), UpdatedAt: time.Now(),
 	}
-	if err := data.Store.CreateEvaluation(evaluation); err != nil {
+	if err := data.GlobalStore.CreateEvaluation(evaluation); err != nil {
 		t.Fatalf("failed to create evaluation: %v", err)
 	}
 

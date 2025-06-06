@@ -2,7 +2,6 @@
 package config
 
 import (
-	"errors"
 	"os"
 )
 
@@ -52,9 +51,11 @@ func LoadConfig() (*Config, error) {
 		DatabaseURL: os.Getenv("DATABASE_URL"),
 		Port:        os.Getenv("PORT"),
 	}
-	if cfg.DatabaseURL == "" {
-		return nil, errors.New("DATABASE_URL environment variable is required")
-	}
+
+	// DATABASE_URL is optional with hybrid store architecture
+	// - If present: Uses PostgreSQL database backend
+	// - If absent: Uses in-memory store for development/testing
+
 	if cfg.Port == "" {
 		cfg.Port = "8080" // default port
 	}

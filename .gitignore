@@ -49,7 +49,9 @@ dist/
 # Coverage reports
 coverage.txt
 coverage.html
-coverage.out
 
-# Go workspace file
-go.work
+# Backup files (development artifacts)
+*_old.*
+*_new.*
+*_backup.*
+*.bak

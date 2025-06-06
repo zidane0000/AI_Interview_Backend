@@ -28,13 +28,12 @@ func TestLoadConfig(t *testing.T) {
 			port:        "1234",
 			expectError: false,
 			expectPort:  "1234",
-		},
-		{
-			name:        "missing db url",
+		}, {
+			name:        "missing db url (uses memory backend)",
 			dbURL:       "",
 			port:        "",
-			expectError: true,
-			expectPort:  "",
+			expectError: false,
+			expectPort:  "8080",
 		},
 	}
 

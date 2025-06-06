@@ -2,51 +2,108 @@
 package data
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
-// Define Go structs for interviews, interview_logs, and evaluations
+// StringArray is a custom type for handling PostgreSQL arrays with GORM
+type StringArray []string
 
-// Interview model with proper database tags
+// Scan implements the Scanner interface for database/sql
+func (s *StringArray) Scan(value interface{}) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, s)
+	case string:
+		return json.Unmarshal([]byte(v), s)
+	default:
+		return fmt.Errorf("cannot scan %T into StringArray", value)
+	}
+}
+
+// Value implements the Valuer interface for database/sql
+func (s StringArray) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// StringMap is a custom type for handling JSON maps with GORM
+type StringMap map[string]string
+
+// Scan implements the Scanner interface for database/sql
+func (s *StringMap) Scan(value interface{}) error {
+	if value == nil {
+		*s = nil
+		return nil
+	}
+
+	switch v := value.(type) {
+	case []byte:
+		return json.Unmarshal(v, s)
+	case string:
+		return json.Unmarshal([]byte(v), s)
+	default:
+		return fmt.Errorf("cannot scan %T into StringMap", value)
+	}
+}
+
+// Value implements the Valuer interface for database/sql
+func (s StringMap) Value() (driver.Value, error) {
+	if s == nil {
+		return nil, nil
+	}
+	return json.Marshal(s)
+}
+
+// Interview model with proper GORM tags
 type Interview struct {
-	ID            string    `db:"id" json:"id"`
-	CandidateName string    `db:"candidate_name" json:"candidate_name"`
-	Questions     []string  `db:"questions" json:"questions"` // Consider JSON column or separate table
-	Status        string    `db:"status" json:"status"`       // "draft", "active", "completed"
-	Type          string    `db:"type" json:"type"`           // "general", "technical", "behavioral"
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	ID            string      `gorm:"primaryKey;type:varchar(255)" json:"id"`
+	CandidateName string      `gorm:"type:varchar(255);not null" json:"candidate_name"`
+	Questions     StringArray `gorm:"type:jsonb" json:"questions"`
+	Status        string      `gorm:"type:varchar(50);not null;default:'draft'" json:"status"` // "draft", "active", "completed"
+	Type          string      `gorm:"type:varchar(50);not null" json:"type"`                   // "general", "technical", "behavioral"
+	CreatedAt     time.Time   `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt     time.Time   `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// Evaluation model
+// Evaluation model with proper GORM tags
 type Evaluation struct {
-	ID          string            `db:"id" json:"id"`
-	InterviewID string            `db:"interview_id" json:"interview_id"`
-	Answers     map[string]string `db:"answers" json:"answers"` // JSON column
-	Score       float64           `db:"score" json:"score"`
-	Feedback    string            `db:"feedback" json:"feedback"`
-	CreatedAt   time.Time         `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time         `db:"updated_at" json:"updated_at"`
+	ID          string    `gorm:"primaryKey;type:varchar(255)" json:"id"`
+	InterviewID string    `gorm:"type:varchar(255);not null;index" json:"interview_id"`
+	Answers     StringMap `gorm:"type:jsonb" json:"answers"`
+	Score       float64   `gorm:"type:decimal(5,2)" json:"score"`
+	Feedback    string    `gorm:"type:text" json:"feedback"`
+	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
-// ChatSession model for conversational interviews
+// ChatSession model for conversational interviews with proper GORM tags
 type ChatSession struct {
-	ID          string     `db:"id" json:"id"`
-	InterviewID string     `db:"interview_id" json:"interview_id"`
-	Status      string     `db:"status" json:"status"` // "active", "completed", "abandoned"
-	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
-	UpdatedAt   time.Time  `db:"updated_at" json:"updated_at"`
-	EndedAt     *time.Time `db:"ended_at" json:"ended_at,omitempty"`
+	ID          string     `gorm:"primaryKey;type:varchar(255)" json:"id"`
+	InterviewID string     `gorm:"type:varchar(255);not null;index" json:"interview_id"`
+	Status      string     `gorm:"type:varchar(50);not null;default:'active'" json:"status"` // "active", "completed", "abandoned"
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`
+	EndedAt     *time.Time `gorm:"type:timestamp" json:"ended_at,omitempty"`
 }
 
-// ChatMessage model
+// ChatMessage model with proper GORM tags
 type ChatMessage struct {
-	ID        string    `db:"id" json:"id"`
-	SessionID string    `db:"session_id" json:"session_id"`
-	Type      string    `db:"type" json:"type"` // "user", "ai"
-	Content   string    `db:"content" json:"content"`
-	Timestamp time.Time `db:"timestamp" json:"timestamp"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	ID        string    `gorm:"primaryKey;type:varchar(255)" json:"id"`
+	SessionID string    `gorm:"type:varchar(255);not null;index" json:"session_id"`
+	Type      string    `gorm:"type:varchar(50);not null" json:"type"` // "user", "ai"
+	Content   string    `gorm:"type:text;not null" json:"content"`
+	Timestamp time.Time `gorm:"not null" json:"timestamp"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
 }
 
 // TODO: Implement File model for resume uploads

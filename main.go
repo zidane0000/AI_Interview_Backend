@@ -24,17 +24,24 @@ func main() {
 	// TODO: Add structured logging with levels (debug, info, warn, error)
 	// TODO: Add log rotation and file output options
 
-	// Initialize database connection
-	fmt.Println("Initializing database connection...")
-	db, err := data.InitDB(cfg.DatabaseURL)
+	// Initialize hybrid store (auto-detects memory vs database backend)
+	fmt.Println("Initializing data store...")
+	err = data.InitGlobalStore()
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Fatalf("failed to initialize store: %v", err)
 	}
-	defer data.CloseDB(db)
 
-	// TODO: Run database migrations on startup
-	// TODO: Add database health checks
-	// TODO: Initialize connection pooling with proper settings
+	// Log the backend being used
+	if data.GlobalStore.GetBackend() == data.BackendDatabase {
+		fmt.Println("Using PostgreSQL database backend")
+	} else {
+		fmt.Println("Using in-memory store backend (set DATABASE_URL for database mode)")
+	}
+
+	// TODO: Add store health checks
+	// if err := data.GlobalStore.Health(); err != nil {
+	//     log.Fatalf("store health check failed: %v", err)
+	// }
 
 	// TODO: Initialize AI service client
 	// aiClient := ai.NewClient(cfg.AIProvider, cfg.AIAPIKey, cfg.AIBaseURL)

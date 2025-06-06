@@ -2,6 +2,8 @@
 package data
 
 import (
+	"fmt"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -30,40 +32,42 @@ func InitDB(databaseURL string) (*gorm.DB, error) {
 	// sqlDB.SetMaxIdleConns(10)
 	// sqlDB.SetMaxOpenConns(100)
 	// sqlDB.SetConnMaxLifetime(time.Hour)
+	// Run database migrations automatically
+	if err := runMigrations(db); err != nil {
+		return nil, fmt.Errorf("migration failed: %w", err)
+	}
 
-	// TODO: Run database migrations automatically
-	// if err := runMigrations(db); err != nil {
-	//     return nil, fmt.Errorf("migration failed: %w", err)
-	// }
-
-	// TODO: Add database health check
-	// if err := db.Exec("SELECT 1").Error; err != nil {
-	//     return nil, fmt.Errorf("database health check failed: %w", err)
-	// }
+	// Add database health check
+	if err := db.Exec("SELECT 1").Error; err != nil {
+		return nil, fmt.Errorf("database health check failed: %w", err)
+	}
 
 	return db, nil
 }
 
-// TODO: Implement database migration function
-// func runMigrations(db *gorm.DB) error {
-//     return db.AutoMigrate(
-//         &Interview{},
-//         &Evaluation{},
-//         &ChatSession{},
-//         &ChatMessage{},
-//         &File{},
-//     )
-// }
+// Implement database migration function
+func runMigrations(db *gorm.DB) error {
+	return db.AutoMigrate(
+		&Interview{},
+		&Evaluation{},
+		&ChatSession{},
+		&ChatMessage{},
+		// &File{}, // TODO: Uncomment when File model is implemented
+	)
+}
 
-// TODO: Implement database seeding for development
-// func SeedDatabase(db *gorm.DB) error {
-//     // Add sample data for development/testing
-// }
+// Implement database seeding for development
+func SeedDatabase(db *gorm.DB) error {
+	// Add sample data for development/testing
+	// This can be used to populate the database with test data
+	return nil
+}
 
-// TODO: Implement database backup utilities
-// func BackupDatabase(db *gorm.DB, outputPath string) error {
-//     // Implement pg_dump wrapper or similar
-// }
+// Implement database backup utilities
+func BackupDatabase(db *gorm.DB, outputPath string) error {
+	// TODO: Implement pg_dump wrapper or similar
+	return nil
+}
 
 // CloseDB closes the provided database connection (if needed)
 func CloseDB(db *gorm.DB) {

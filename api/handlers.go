@@ -68,9 +68,8 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:     time.Now(),
 		UpdatedAt:     time.Now(),
 	}
-
-	// Store interview in memory store
-	err := data.Store.CreateInterview(interview)
+	// Store interview in hybrid store
+	err := data.GlobalStore.CreateInterview(interview)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to create interview", err.Error())
 		return
@@ -119,9 +118,8 @@ func ListInterviewsHandler(w http.ResponseWriter, r *http.Request) {
 	if sortOrder := r.URL.Query().Get("sort_order"); sortOrder != "" {
 		opts.SortOrder = sortOrder
 	}
-
 	// Fetch interviews from memory store with options
-	result, err := data.Store.GetInterviewsWithOptions(opts)
+	result, err := data.GlobalStore.GetInterviewsWithOptions(opts)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch interviews", err.Error())
 		return
@@ -152,7 +150,7 @@ func GetInterviewHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, ErrCodeBadRequest, ErrMsgMissingInterviewID)
 		return
 	} // Get interview from memory store
-	interview, err := data.Store.GetInterview(id)
+	interview, err := data.GlobalStore.GetInterview(id)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Interview not found")
 		return
@@ -178,9 +176,8 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Missing interview_id or answers")
 		return
 	}
-
 	// Validate interview exists before creating evaluation
-	interview, err := data.Store.GetInterview(req.InterviewID)
+	interview, err := data.GlobalStore.GetInterview(req.InterviewID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Interview not found")
 		return
@@ -216,13 +213,12 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		ID:          evaluationID,
 		InterviewID: req.InterviewID,
 		Answers:     req.Answers,
-		Score:       score,
-		Feedback:    feedback,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		Score:       score, Feedback: feedback,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	err = data.Store.CreateEvaluation(evaluation)
+	err = data.GlobalStore.CreateEvaluation(evaluation)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save evaluation")
 		return
@@ -246,9 +242,8 @@ func GetEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, ErrCodeBadRequest, ErrMsgMissingEvaluationID)
 		return
 	}
-
 	// Get evaluation from database
-	evaluation, err := data.Store.GetEvaluation(id)
+	evaluation, err := data.GlobalStore.GetEvaluation(id)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Evaluation not found")
 		return
@@ -275,9 +270,8 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Missing interview ID")
 		return
 	}
-
 	// Validate interview exists
-	_, err := data.Store.GetInterview(interviewID)
+	_, err := data.GlobalStore.GetInterview(interviewID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Interview not found")
 		return
@@ -292,8 +286,7 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}
-
-	err = data.Store.CreateChatSession(session)
+	err = data.GlobalStore.CreateChatSession(session)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to create chat session")
 		return
@@ -312,19 +305,17 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		ID:        messageID,
 		SessionID: sessionID,
 		Type:      "ai",
-		Content:   aiResponse,
-		Timestamp: time.Now(),
-		CreatedAt: time.Now(),
+		Content:   aiResponse, Timestamp: time.Now(), CreatedAt: time.Now(),
 	}
 
-	err = data.Store.AddChatMessage(aiMessage)
+	err = data.GlobalStore.AddChatMessage(sessionID, aiMessage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save AI message")
 		return
 	}
 
 	// Convert to DTO format
-	messages, _ := data.Store.GetChatMessages(sessionID)
+	messages, _ := data.GlobalStore.GetChatMessages(sessionID)
 	messageDTOs := make([]ChatMessageDTO, len(messages))
 	for i, msg := range messages {
 		messageDTOs[i] = ChatMessageDTO{
@@ -365,9 +356,8 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Message cannot be empty")
 		return
 	}
-
 	// Validate chat session exists and is active
-	session, err := data.Store.GetChatSession(sessionID)
+	session, err := data.GlobalStore.GetChatSession(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Chat session not found")
 		return
@@ -383,18 +373,16 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	userMessage := &data.ChatMessage{
 		ID:        userMessageID,
 		SessionID: sessionID,
-		Type:      "user",
-		Content:   req.Message,
+		Type:      "user", Content: req.Message,
 		Timestamp: time.Now(),
 		CreatedAt: time.Now(),
 	}
-
-	err = data.Store.AddChatMessage(userMessage)
+	err = data.GlobalStore.AddChatMessage(sessionID, userMessage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save user message")
 		return
 	} // Get conversation history for AI context (excluding the current message)
-	messages, err := data.Store.GetChatMessages(sessionID)
+	messages, err := data.GlobalStore.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat history")
 		return
@@ -438,12 +426,10 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		ID:        aiMessageID,
 		SessionID: sessionID,
 		Type:      "ai",
-		Content:   aiResponse,
-		Timestamp: time.Now(),
-		CreatedAt: time.Now(),
-	}
+		Content:   aiResponse, Timestamp: time.Now(),
+		CreatedAt: time.Now()}
 
-	err = data.Store.AddChatMessage(aiMessage)
+	err = data.GlobalStore.AddChatMessage(sessionID, aiMessage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save AI message")
 		return
@@ -455,7 +441,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		session.UpdatedAt = time.Now()
 		endedAt := time.Now()
 		session.EndedAt = &endedAt
-		if err := data.Store.UpdateChatSession(session); err != nil {
+		if err := data.GlobalStore.UpdateChatSession(session); err != nil {
 			log.Printf("Failed to update chat session: %v", err)
 		}
 	}
@@ -490,16 +476,15 @@ func GetChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Missing session ID")
 		return
 	}
-
 	// Get chat session
-	session, err := data.Store.GetChatSession(sessionID)
+	session, err := data.GlobalStore.GetChatSession(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Chat session not found")
 		return
 	}
 
 	// Get all messages for the session
-	messages, err := data.Store.GetChatMessages(sessionID)
+	messages, err := data.GlobalStore.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat messages")
 		return
@@ -534,9 +519,8 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Missing session ID")
 		return
 	}
-
 	// Get chat session
-	session, err := data.Store.GetChatSession(sessionID)
+	session, err := data.GlobalStore.GetChatSession(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Chat session not found")
 		return
@@ -548,20 +532,19 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	endedAt := time.Now()
 	session.EndedAt = &endedAt
 
-	err = data.Store.UpdateChatSession(session)
+	err = data.GlobalStore.UpdateChatSession(session)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to update session")
 		return
-	}
-	// Get all messages for evaluation
-	messages, err := data.Store.GetChatMessages(sessionID)
+	} // Get all messages for evaluation
+	messages, err := data.GlobalStore.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat messages")
 		return
 	}
 
 	// Get interview details for context
-	interview, err := data.Store.GetInterview(session.InterviewID)
+	interview, err := data.GlobalStore.GetInterview(session.InterviewID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get interview details")
 		return
@@ -597,15 +580,14 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	evaluationID := data.GenerateID()
 	evaluation := &data.Evaluation{
 		ID:          evaluationID,
-		InterviewID: session.InterviewID,
-		Answers:     answers,
-		Score:       score,
-		Feedback:    feedback,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		InterviewID: session.InterviewID, Answers: answers,
+		Score:     score,
+		Feedback:  feedback,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 
-	err = data.Store.CreateEvaluation(evaluation)
+	err = data.GlobalStore.CreateEvaluation(evaluation)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save evaluation")
 		return
