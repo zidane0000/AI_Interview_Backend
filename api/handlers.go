@@ -6,12 +6,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zidane0000/AI_Interview_Backend/ai"
 	"github.com/zidane0000/AI_Interview_Backend/data"
 )
+
+// Helper: parse integer query parameter with default value
+func parseIntQuery(r *http.Request, key string, defaultValue int) int {
+	if str := r.URL.Query().Get(key); str != "" {
+		if val, err := strconv.Atoi(str); err == nil && val >= 0 {
+			return val
+		}
+	}
+	return defaultValue
+}
 
 // Helper: write JSON response
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
@@ -76,15 +87,60 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 
 // ListInterviewsHandler handles GET /interviews
 func ListInterviewsHandler(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement database query to fetch all interviews
-	// TODO: Add pagination support (limit, offset, page parameters)
-	// TODO: Add filtering by candidate name, date range, status
-	// TODO: Add sorting options (by date, name, score)
-	// TODO: Include total count for frontend pagination
+	// Parse query parameters for pagination, filtering, and sorting
+	opts := data.ListInterviewsOptions{
+		Limit:  parseIntQuery(r, "limit", 10),
+		Offset: parseIntQuery(r, "offset", 0),
+		Page:   parseIntQuery(r, "page", 0),
+	}
+
+	// Parse filtering parameters
+	if candidateName := r.URL.Query().Get("candidate_name"); candidateName != "" {
+		opts.CandidateName = candidateName
+	}
+	if status := r.URL.Query().Get("status"); status != "" {
+		opts.Status = status
+	}
+	if dateFrom := r.URL.Query().Get("date_from"); dateFrom != "" {
+		if parsed, err := time.Parse("2006-01-02", dateFrom); err == nil {
+			opts.DateFrom = parsed
+		}
+	}
+	if dateTo := r.URL.Query().Get("date_to"); dateTo != "" {
+		if parsed, err := time.Parse("2006-01-02", dateTo); err == nil {
+			opts.DateTo = parsed
+		}
+	}
+
+	// Parse sorting parameters
+	if sortBy := r.URL.Query().Get("sort_by"); sortBy != "" {
+		opts.SortBy = sortBy
+	}
+	if sortOrder := r.URL.Query().Get("sort_order"); sortOrder != "" {
+		opts.SortOrder = sortOrder
+	}
+
+	// Fetch interviews from memory store with options
+	result, err := data.Store.GetInterviewsWithOptions(opts)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch interviews", err.Error())
+		return
+	}
+
+	// Convert to DTOs
+	interviewDTOs := make([]InterviewResponseDTO, len(result.Interviews))
+	for i, interview := range result.Interviews {
+		interviewDTOs[i] = InterviewResponseDTO{
+			ID:            interview.ID,
+			CandidateName: interview.CandidateName,
+			Questions:     interview.Questions,
+			CreatedAt:     interview.CreatedAt,
+		}
+	}
 
 	resp := ListInterviewsResponseDTO{
-		Interviews: []InterviewResponseDTO{}, // TODO: fetch from DB
-		Total:      0,                        // TODO: return actual count
+		Interviews: interviewDTOs,
+		Total:      result.Total,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
