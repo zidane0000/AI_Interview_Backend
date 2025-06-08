@@ -48,19 +48,11 @@ func main() {
 	// if err := aiClient.TestConnection(); err != nil {
 	//     log.Fatalf("failed to connect to AI service: %v", err)
 	// }
-
-	// TODO: Initialize business services with dependency injection
-	// interviewService := business.NewInterviewService(db, aiClient)
-	// evaluationService := business.NewEvaluationService(db, aiClient)
-	// chatService := business.NewChatService(db, aiClient)
-
 	// TODO: Initialize file upload directory and permissions
 	// if err := os.MkdirAll(cfg.UploadPath, 0755); err != nil {
 	//     log.Fatalf("failed to create upload directory: %v", err)
 	// }
-
 	// Set up router
-	// TODO: Pass services to router for dependency injection
 	router := api.SetupRouter()
 
 	// TODO: Add graceful shutdown handling

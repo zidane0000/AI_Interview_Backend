@@ -61,7 +61,6 @@ go test ./e2e/...
 
 ```
 ├── api/          # HTTP handlers, routing, middleware
-├── business/     # Core business logic
 ├── data/         # Database models and repositories  
 ├── ai/           # AI provider integrations
 ├── config/       # Environment configuration

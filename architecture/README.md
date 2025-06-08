@@ -8,36 +8,32 @@ The AI Interview Backend is designed with scalability, maintainability, and perf
 
 ## System Architecture Diagram
 
-Below is a high-level architecture diagram showing the interaction between the API Layer, Business Logic Layer, Data Layer, and AI Evaluation Service:
+Below is a high-level architecture diagram showing the interaction between the API Layer, Data Layer, and AI Evaluation Service:
 
 ```mermaid
 graph TD
     A[Client] --> B[API Layer]
-    B --> C[Business Logic Layer]
-    C --> D[Data Layer]
-    C --> E[AI Evaluation Service]
+    B --> C[Data Layer]
+    B --> D[AI Evaluation Service]
 ```
 
 ## Components
 
 ### 1. API Layer
 
-- **Responsibility**: Handles HTTP requests and responses.
+- **Responsibility**: Handles HTTP requests and responses, contains request processing logic.
 - **Technology**: Built using Go (Golang) with RESTful API principles.
 - **Endpoints**: Defined in the `openapi.yaml` file.
+- **Logic**: Contains interview processing, evaluation logic, and AI service coordination.
 
-### 2. Business Logic Layer
-
-- **Responsibility**: Contains the core logic for processing interviews, managing questions, and interacting with the AI evaluation service.
-- **Design**: Implements clean architecture principles to separate concerns.
-
-### 3. Data Layer
+### 2. Data Layer
 
 - **Responsibility**: Manages data persistence and retrieval.
 - **Database**: Uses PostgreSQL for storing interview records, questions, and evaluation results.
-- **ORM/Driver**: Can use `pgx` or `gorm` for database interaction.
+- **ORM/Driver**: Uses `gorm` for database interaction with hybrid store pattern.
+- **Flexibility**: Supports both in-memory and database backends for development and production.
 
-### 4. AI Evaluation Service
+### 3. AI Evaluation Service
 
 - **Responsibility**: Processes interview answers and generates feedback using AI models.
 - **Integration**: Communicates with external AI services or in-house models.
@@ -45,10 +41,10 @@ graph TD
 ## Data Flow
 
 1. **Request Handling**: The API Layer receives HTTP requests from the client and validates them.
-2. **Business Logic Execution**: The request is passed to the Business Logic Layer, which processes the data and determines the next steps.
-3. **Data Interaction**: The Business Logic Layer interacts with the Data Layer to retrieve or store information.
-4. **AI Evaluation**: If required, the Business Logic Layer communicates with the AI Evaluation Service to process interview answers and generate feedback.
-5. **Response Generation**: The processed data is returned to the API Layer, which formats it into a response for the client.
+2. **Request Processing**: The API handlers process the request, applying business logic directly within the handlers.
+3. **Data Interaction**: The API Layer interacts with the Data Layer (via Hybrid Store) to retrieve or store information.
+4. **AI Evaluation**: If required, the API Layer communicates with the AI Evaluation Service to process interview answers and generate feedback.
+5. **Response Generation**: The processed data is formatted and returned as an HTTP response to the client.
 
 ## Database Design
 
@@ -73,10 +69,10 @@ The database is designed to store interview records, questions, and answers. Bel
 
 ## Folder Structure
 
-- `api/`: Contains API route definitions and handlers.
-- `business/`: Contains business logic and service implementations.
-- `data/`: Contains database models and data access logic.
-- `ai/`: Contains logic for interacting with AI models.
+- `api/`: Contains API route definitions, handlers, and request processing logic.
+- `data/`: Contains database models, data access logic, and hybrid store implementation.
+- `ai/`: Contains logic for interacting with AI models and evaluation services.
+- `config/`: Contains application configuration and environment handling.
 - `docs/`: Contains documentation, including the `openapi.yaml` file.
 
 ## Future Enhancements

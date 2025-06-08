@@ -260,9 +260,6 @@ func GetEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// TODO: Implement chat-based interview handlers
-// These handlers are required by the frontend for conversational interviews
-
 // StartChatSessionHandler handles POST /interviews/{id}/chat/start
 func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	interviewID := chi.URLParam(r, "id")
