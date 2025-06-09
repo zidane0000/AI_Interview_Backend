@@ -185,6 +185,14 @@ func (h *HybridStore) Health() error {
 	return nil // Memory store is always healthy
 }
 
+// Close closes the hybrid store and cleans up resources
+func (h *HybridStore) Close() error {
+	if h.backend == BackendDatabase && h.dbService != nil {
+		return h.dbService.Close()
+	}
+	return nil // Memory store doesn't need cleanup
+}
+
 // Global hybrid store instance
 var GlobalStore *HybridStore
 

@@ -3,15 +3,22 @@ package config
 
 import (
 	"os"
+	"time"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
+	DatabaseURL     string
+	Port            string
+	ShutdownTimeout time.Duration // Supports: ns, us, ms, s, m, h (use 24h for 1 day)
 
-	// TODO: Add AI service configuration
+	// AI service configuration
+	GeminiAPIKey string
+	OpenAIAPIKey string
+	// TODO: Add more AI providers
+	// AnthropicAPIKey string
 	// AIProvider   string // "openai", "anthropic", "google", "local"
-	// AIAPIKey     string
 	// AIBaseURL    string
 	// AIModel      string
 	// AITimeout    time.Duration
@@ -46,10 +53,14 @@ type Config struct {
 }
 
 // LoadConfig loads configuration from environment variables
-func LoadConfig() (*Config, error) {
+func LoadConfig() (*Config, error) { // Load .env file (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
 	cfg := &Config{
-		DatabaseURL: os.Getenv("DATABASE_URL"),
-		Port:        os.Getenv("PORT"),
+		DatabaseURL:  os.Getenv("DATABASE_URL"),
+		Port:         os.Getenv("PORT"),
+		GeminiAPIKey: os.Getenv("GEMINI_API_KEY"),
+		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"),
 	}
 
 	// DATABASE_URL is optional with hybrid store architecture
@@ -58,6 +69,17 @@ func LoadConfig() (*Config, error) {
 
 	if cfg.Port == "" {
 		cfg.Port = "8080" // default port
+	} // Parse shutdown timeout (supports: ns, us, ms, s, m, h - no days support, use 24h for 1 day)
+	shutdownTimeoutStr := os.Getenv("SHUTDOWN_TIMEOUT")
+	if shutdownTimeoutStr == "" {
+		cfg.ShutdownTimeout = 30 * time.Second // default 30 seconds
+	} else {
+		timeout, err := time.ParseDuration(shutdownTimeoutStr)
+		if err != nil {
+			cfg.ShutdownTimeout = 30 * time.Second // fallback to default
+		} else {
+			cfg.ShutdownTimeout = timeout
+		}
 	}
 
 	// TODO: Load AI service configuration
@@ -86,6 +108,15 @@ func LoadConfig() (*Config, error) {
 	// TODO: Add configuration validation with detailed error messages
 
 	return cfg, nil
+}
+
+// Getter methods for AI client interface
+func (c *Config) GetGeminiAPIKey() string {
+	return c.GeminiAPIKey
+}
+
+func (c *Config) GetOpenAIAPIKey() string {
+	return c.OpenAIAPIKey
 }
 
 // TODO: Add helper functions for configuration parsing

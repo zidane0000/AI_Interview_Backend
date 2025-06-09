@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 // getEnvOrDefault returns environment variable value or default
@@ -57,7 +59,11 @@ func getEnvAsDurationOrDefault(key string, defaultValue time.Duration) time.Dura
 }
 
 // NewDefaultAIConfig creates a default AI configuration from environment variables
+// This function automatically loads .env files to ensure configuration is available
 func NewDefaultAIConfig() *AIConfig {
+	// Load .env file if it exists (ignore error if file doesn't exist)
+	_ = godotenv.Load()
+
 	return &AIConfig{
 		OpenAIAPIKey:     getEnvOrDefault("OPENAI_API_KEY", ""),
 		GeminiAPIKey:     getEnvOrDefault("GEMINI_API_KEY", ""),

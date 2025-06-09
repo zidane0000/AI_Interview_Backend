@@ -11,10 +11,11 @@ type AIClient struct {
 	enhancedClient *EnhancedAIClient
 }
 
-// Global AI client instance
+// Global AI client instance (automatically loads .env configuration)
 var Client = NewAutoAIClient()
 
 // NewAutoAIClient initializes the AI client using the best available API key (OpenAI > Gemini > none)
+// This method automatically loads .env files and reads environment variables
 func NewAutoAIClient() *AIClient {
 	config := NewDefaultAIConfig() // loads from env
 
@@ -35,9 +36,7 @@ func NewAutoAIClient() *AIClient {
 }
 
 // GenerateChatResponse generates AI response for conversational interviews
-func (c *AIClient) GenerateChatResponse(conversationHistory []map[string]string, userMessage string) (string, error) {
-	sessionID := "default-session" // TODO: Use proper session ID from context
-
+func (c *AIClient) GenerateChatResponse(sessionID string, conversationHistory []map[string]string, userMessage string) (string, error) {
 	// Build context for the AI including conversation history
 	contextMap := map[string]interface{}{
 		"interview_type":       "general",
@@ -50,9 +49,7 @@ func (c *AIClient) GenerateChatResponse(conversationHistory []map[string]string,
 }
 
 // GenerateClosingMessage generates a closing AI response for ending interviews
-func (c *AIClient) GenerateClosingMessage(conversationHistory []map[string]string, userMessage string) (string, error) {
-	sessionID := "default-session" // TODO: Use proper session ID from context
-
+func (c *AIClient) GenerateClosingMessage(sessionID string, conversationHistory []map[string]string, userMessage string) (string, error) {
 	// Build context for the AI to indicate this is the final message
 	contextMap := map[string]interface{}{
 		"interview_type":       "general",

@@ -3,38 +3,47 @@ package data
 
 import (
 	"fmt"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // InitDB initializes and returns a PostgreSQL connection using GORM
 func InitDB(databaseURL string) (*gorm.DB, error) {
-	// TODO: Add database configuration options
-	// config := &gorm.Config{
-	//     Logger: logger.Default.LogMode(logger.Info),
-	//     NowFunc: func() time.Time { return time.Now().UTC() },
-	//     DryRun: false,
-	//     PrepareStmt: true,
-	//     DisableForeignKeyConstraintWhenMigrating: false,
-	// }
+	// Configure GORM for better performance
+	config := &gorm.Config{
+		Logger:                                   logger.Default.LogMode(logger.Silent), // Reduce logging overhead in production
+		NowFunc:                                  func() time.Time { return time.Now().UTC() },
+		PrepareStmt:                              true, // Enable prepared statements for better performance
+		DisableForeignKeyConstraintWhenMigrating: false,
+	}
 
-	db, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(databaseURL), config)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: Configure connection pool settings for production
-	// sqlDB, err := db.DB()
-	// if err != nil {
-	//     return nil, err
-	// }
-	// sqlDB.SetMaxIdleConns(10)
-	// sqlDB.SetMaxOpenConns(100)
-	// sqlDB.SetConnMaxLifetime(time.Hour)
-	// Run database migrations automatically
+	// Configure connection pool settings for optimal performance
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+
+	// Connection pool optimization for concurrent operations
+	sqlDB.SetMaxIdleConns(25)                  // Keep 25 idle connections ready
+	sqlDB.SetMaxOpenConns(100)                 // Allow up to 100 concurrent connections
+	sqlDB.SetConnMaxLifetime(time.Hour)        // Recycle connections every hour
+	sqlDB.SetConnMaxIdleTime(15 * time.Minute) // Close idle connections after 15 minutes	// Run database migrations automatically
 	if err := runMigrations(db); err != nil {
 		return nil, fmt.Errorf("migration failed: %w", err)
+	}
+
+	// Add performance indexes for better concurrent query performance
+	if err := AddPerformanceIndexes(db); err != nil {
+		// Don't fail if indexes can't be created, just log warning
+		fmt.Printf("Warning: Some performance indexes could not be created: %v\n", err)
 	}
 
 	// Add database health check

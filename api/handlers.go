@@ -290,7 +290,7 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate initial AI greeting message
-	aiResponse, err := ai.Client.GenerateChatResponse([]map[string]string{}, "")
+	aiResponse, err := ai.Client.GenerateChatResponse(sessionID, []map[string]string{}, "")
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
 		return
@@ -408,9 +408,9 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	} // Generate AI response - use closing context if interview should end
 	var aiResponse string
 	if shouldEndInterview {
-		aiResponse, err = ai.Client.GenerateClosingMessage(conversationHistory, req.Message)
+		aiResponse, err = ai.Client.GenerateClosingMessage(sessionID, conversationHistory, req.Message)
 	} else {
-		aiResponse, err = ai.Client.GenerateChatResponse(conversationHistory, req.Message)
+		aiResponse, err = ai.Client.GenerateChatResponse(sessionID, conversationHistory, req.Message)
 	}
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
