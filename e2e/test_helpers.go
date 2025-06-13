@@ -7,50 +7,17 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
+
+	"github.com/zidane0000/AI_Interview_Backend/api"
 )
 
-// DTO types for testing (mirrored from api package)
-type InterviewResponseDTO struct {
-	ID            string    `json:"id"`
-	CandidateName string    `json:"candidate_name"`
-	Questions     []string  `json:"questions"`
-	CreatedAt     time.Time `json:"created_at"`
-}
-
-type ChatMessageDTO struct {
-	ID        string    `json:"id"`
-	Type      string    `json:"type"`
-	Content   string    `json:"content"`
-	Timestamp time.Time `json:"timestamp"`
-}
-
-type ChatInterviewSessionDTO struct {
-	ID          string           `json:"id"`
-	InterviewID string           `json:"interview_id"`
-	Messages    []ChatMessageDTO `json:"messages"`
-	Status      string           `json:"status"`
-	CreatedAt   time.Time        `json:"created_at"`
-}
-
-type SendMessageRequestDTO struct {
-	Message string `json:"message"`
-}
-
-type SendMessageResponseDTO struct {
-	Message       ChatMessageDTO  `json:"message"`
-	AIResponse    *ChatMessageDTO `json:"ai_response,omitempty"`
-	SessionStatus string          `json:"session_status"` // "active" or "completed"
-}
-
-type EvaluationResponseDTO struct {
-	ID          string            `json:"id"`
-	InterviewID string            `json:"interview_id"`
-	Answers     map[string]string `json:"answers"`
-	Score       float64           `json:"score"`
-	Feedback    string            `json:"feedback"`
-	CreatedAt   time.Time         `json:"created_at"`
-}
+// Use API DTOs directly instead of mirroring them
+type InterviewResponseDTO = api.InterviewResponseDTO
+type ChatMessageDTO = api.ChatMessageDTO
+type ChatInterviewSessionDTO = api.ChatInterviewSessionDTO
+type SendMessageRequestDTO = api.SendMessageRequestDTO
+type SendMessageResponseDTO = api.SendMessageResponseDTO
+type EvaluationResponseDTO = api.EvaluationResponseDTO
 
 // Test helper functions for E2E tests
 
@@ -63,12 +30,22 @@ func GetAPIBaseURL() string {
 
 // CreateTestInterview creates a test interview and returns the response
 func CreateTestInterview(t *testing.T, candidateName string, questions []string) InterviewResponseDTO {
+	return CreateTestInterviewWithLanguage(t, candidateName, questions, "")
+}
+
+// CreateTestInterviewWithLanguage creates a test interview with specified language
+func CreateTestInterviewWithLanguage(t *testing.T, candidateName string, questions []string, language string) InterviewResponseDTO {
 	t.Helper()
 	baseURL := GetAPIBaseURL()
 
 	createReq := map[string]interface{}{
 		"candidate_name": candidateName,
 		"questions":      questions,
+	}
+
+	// Add language if specified
+	if language != "" {
+		createReq["interview_language"] = language
 	}
 
 	reqBody, _ := json.Marshal(createReq)
@@ -123,6 +100,8 @@ func SendMessage(t *testing.T, sessionID, message string) SendMessageResponseDTO
 
 	sendMsgReq := SendMessageRequestDTO{
 		Message: message,
+		// Note: InterviewID is not needed for /chat/{sessionID}/message endpoint
+		// as the session already knows which interview it belongs to
 	}
 	reqBody, _ := json.Marshal(sendMsgReq)
 	resp, err := http.Post(fmt.Sprintf("%s/chat/%s/message", baseURL, sessionID), "application/json", bytes.NewBuffer(reqBody))

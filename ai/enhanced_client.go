@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 )
@@ -276,8 +277,25 @@ func (c *EnhancedAIClient) EvaluateAnswers(ctx context.Context, req *EvaluationR
 func (c *EnhancedAIClient) buildInterviewSystemPrompt(context map[string]interface{}) string {
 	jobTitle := getStringFromContext(context, "job_title", "Software Engineer")
 	interviewType := getStringFromContext(context, "interview_type", "general")
+	language := getStringFromContext(context, "language", "en")
 
-	basePrompt := fmt.Sprintf(`You are an experienced interviewer conducting a %s interview for a %s position.
+	// Build language-specific instructions
+	var languageInstructions string
+	switch language {
+	case "zh-TW":
+		languageInstructions = `CRITICAL LANGUAGE REQUIREMENT: 
+- You MUST respond ONLY in Traditional Chinese (繁體中文)
+- Do NOT use English in your responses
+- Use Traditional Chinese characters for ALL communication
+- All questions, acknowledgments, and follow-ups must be in Traditional Chinese
+- This is a Traditional Chinese interview - maintain language consistency`
+	case "en":
+		languageInstructions = "IMPORTANT: You must respond ONLY in English."
+	default:
+		languageInstructions = "IMPORTANT: You must respond ONLY in English."
+	}
+
+	basePrompt := fmt.Sprintf(`%sYou are an experienced interviewer conducting a %s interview for a %s position.
 
 Your role:
 - Ask thoughtful, relevant questions that assess the candidate's skills and experience
@@ -293,7 +311,9 @@ Guidelines:
 - Ask follow-up questions to dive deeper into interesting topics
 - Keep the conversation flowing naturally
 
-Remember: You are evaluating the candidate's technical skills, problem-solving ability, and cultural fit.`, interviewType, jobTitle)
+Remember: You are evaluating the candidate's technical skills, problem-solving ability, and cultural fit.
+
+%s`, languageInstructions, interviewType, jobTitle, languageInstructions)
 
 	return basePrompt
 }
@@ -349,13 +369,46 @@ func (c *EnhancedAIClient) cacheResponse(req *ChatRequest, response *ChatRespons
 
 // generateCacheKey creates a cache key for the request
 func (c *EnhancedAIClient) generateCacheKey(req *ChatRequest) string {
-	// Simple cache key based on last message content and model
-	// In production, you might want a more sophisticated key
-	if len(req.Messages) > 0 {
-		lastMessage := req.Messages[len(req.Messages)-1]
-		return fmt.Sprintf("%s:%s:%s", req.Model, lastMessage.Role, lastMessage.Content)
+	// Build a comprehensive cache key that includes:
+	// 1. Model name
+	// 2. Language context
+	// 3. System prompt content (first 100 chars to avoid overly long keys)
+	// 4. Conversation history length
+
+	var keyParts []string
+	keyParts = append(keyParts, req.Model)
+
+	// Include language from context if available
+	if languageVal, exists := req.Context["language"]; exists {
+		if language, ok := languageVal.(string); ok {
+			keyParts = append(keyParts, "lang:"+language)
+		}
 	}
-	return fmt.Sprintf("%s:empty", req.Model)
+
+	// Include system prompt (truncated for key length)
+	if len(req.Messages) > 0 {
+		systemMessage := req.Messages[0]
+		if systemMessage.Role == "system" {
+			// Use first 100 characters of system prompt to differentiate languages
+			promptPreview := systemMessage.Content
+			if len(promptPreview) > 100 {
+				promptPreview = promptPreview[:100]
+			}
+			keyParts = append(keyParts, "system:"+promptPreview)
+		}
+
+		// Include conversation length
+		keyParts = append(keyParts, fmt.Sprintf("len:%d", len(req.Messages)))
+	}
+
+	// Join all parts with colons
+	cacheKey := strings.Join(keyParts, ":")
+
+	// Replace problematic characters that might break cache keys
+	cacheKey = strings.ReplaceAll(cacheKey, "\n", "\\n")
+	cacheKey = strings.ReplaceAll(cacheKey, "\r", "\\r")
+
+	return cacheKey
 }
 
 // updateMetrics updates client metrics

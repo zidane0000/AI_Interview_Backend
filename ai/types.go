@@ -62,6 +62,7 @@ type EvaluationRequest struct {
 	Criteria    []string               `json:"criteria"`     // Evaluation criteria
 	Context     map[string]interface{} `json:"context"`      // Additional context
 	DetailLevel string                 `json:"detail_level"` // "brief", "detailed", "comprehensive"
+	Language    string                 `json:"language"`     // Language for evaluation ("en", "zh-TW")
 }
 
 // EvaluationResponse represents an AI evaluation result

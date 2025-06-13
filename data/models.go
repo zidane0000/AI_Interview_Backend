@@ -8,6 +8,30 @@ import (
 	"time"
 )
 
+// Language constants for interview support
+const (
+	LanguageEnglish            = "en"
+	LanguageTraditionalChinese = "zh-TW"
+)
+
+// ValidateLanguage checks if the provided language code is supported
+func ValidateLanguage(lang string) bool {
+	return lang == LanguageEnglish || lang == LanguageTraditionalChinese
+}
+
+// GetDefaultLanguage returns the default language when none is specified
+func GetDefaultLanguage() string {
+	return LanguageEnglish
+}
+
+// GetValidatedLanguage returns a valid language, defaulting to English if invalid
+func GetValidatedLanguage(lang string) string {
+	if ValidateLanguage(lang) {
+		return lang
+	}
+	return GetDefaultLanguage()
+}
+
 // StringArray is a custom type for handling PostgreSQL arrays with GORM
 type StringArray []string
 
@@ -69,6 +93,7 @@ type Interview struct {
 	ID            string      `gorm:"primaryKey;type:varchar(255)" json:"id"`
 	CandidateName string      `gorm:"type:varchar(255);not null" json:"candidate_name"`
 	Questions     StringArray `gorm:"type:jsonb" json:"questions"`
+	Language      string      `gorm:"type:varchar(10);not null;default:'en'" json:"language"`  // Interview language: "en" or "zh-TW"
 	Status        string      `gorm:"type:varchar(50);not null;default:'draft'" json:"status"` // "draft", "active", "completed"
 	Type          string      `gorm:"type:varchar(50);not null" json:"type"`                   // "general", "technical", "behavioral"
 	CreatedAt     time.Time   `gorm:"autoCreateTime" json:"created_at"`
@@ -90,6 +115,7 @@ type Evaluation struct {
 type ChatSession struct {
 	ID          string     `gorm:"primaryKey;type:varchar(255)" json:"id"`
 	InterviewID string     `gorm:"type:varchar(255);not null;index" json:"interview_id"`
+	Language    string     `gorm:"type:varchar(10);not null;default:'en'" json:"language"`   // Session language: "en" or "zh-TW"
 	Status      string     `gorm:"type:varchar(50);not null;default:'active'" json:"status"` // "active", "completed", "abandoned"
 	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updated_at"`

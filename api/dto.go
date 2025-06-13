@@ -14,14 +14,16 @@ import "time"
 
 // --- Interview DTOs ---
 type CreateInterviewRequestDTO struct {
-	CandidateName string   `json:"candidate_name"`
-	Questions     []string `json:"questions"`
+	CandidateName     string   `json:"candidate_name"`
+	Questions         []string `json:"questions"`
+	InterviewLanguage string   `json:"interview_language,omitempty"` // Language preference: "en" or "zh-TW"
 }
 
 type InterviewResponseDTO struct {
 	ID            string    `json:"id"`
 	CandidateName string    `json:"candidate_name"`
 	Questions     []string  `json:"questions"`
+	Language      string    `json:"language"` // Language preference: "en" or "zh-TW"
 	CreatedAt     time.Time `json:"created_at"`
 }
 
@@ -48,6 +50,11 @@ type EvaluationResponseDTO struct {
 
 // --- Chat DTOs ---
 // TODO: Implement chat-based interview DTOs to support conversational interviews
+
+type StartChatSessionRequestDTO struct {
+	InterviewLanguage string `json:"interview_language,omitempty"` // Optional language override
+}
+
 type ChatMessageDTO struct {
 	ID        string    `json:"id"`
 	Type      string    `json:"type"` // "ai" or "user"
@@ -58,14 +65,14 @@ type ChatMessageDTO struct {
 type ChatInterviewSessionDTO struct {
 	ID          string           `json:"id"`
 	InterviewID string           `json:"interview_id"`
+	Language    string           `json:"language"` // Session language: "en" or "zh-TW"
 	Messages    []ChatMessageDTO `json:"messages"`
 	Status      string           `json:"status"` // "active" or "completed"
 	CreatedAt   time.Time        `json:"created_at"`
 }
 
 type SendMessageRequestDTO struct {
-	InterviewID string `json:"interview_id"`
-	Message     string `json:"message"`
+	Message string `json:"message"`
 }
 
 type SendMessageResponseDTO struct {

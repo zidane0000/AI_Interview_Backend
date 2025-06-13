@@ -3,6 +3,7 @@ package ai
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -14,23 +15,26 @@ func NewMockProvider() *MockProvider {
 }
 
 func (m *MockProvider) GenerateResponse(ctx context.Context, req *ChatRequest) (*ChatResponse, error) {
-	// Generate more substantial mock responses for testing
-	mockResponses := []string{
-		"[MOCK] Thank you for sharing that information. Can you tell me more about your experience with software development and the technologies you've worked with?",
-		"[MOCK] That's interesting. How do you approach problem-solving when faced with complex technical challenges?",
-		"[MOCK] I appreciate your detailed response. Could you walk me through a specific project where you demonstrated leadership skills?",
-		"[MOCK] Thank you for the explanation. What motivates you in your professional work, and how do you stay updated with industry trends?",
-		"[MOCK] That's a great example. How do you handle working under pressure and tight deadlines?",
-		"[MOCK] I see. Can you describe a situation where you had to collaborate with cross-functional teams?",
-		"[MOCK] Thank you for sharing your experience. What are your career goals for the next few years?",
-		"[MOCK] That concludes our interview. Thank you for your time and thoughtful responses throughout our conversation.",
+	// Detect language from system prompt
+	var isTraditionalChinese bool
+	for _, msg := range req.Messages {
+		if msg.Role == "system" {
+			if strings.Contains(msg.Content, "Traditional Chinese") || strings.Contains(msg.Content, "繁體中文") {
+				isTraditionalChinese = true
+			}
+		}
 	}
 
-	// Use a simple hash of the request to get consistent but varied responses
-	responseIndex := len(req.Messages) % len(mockResponses)
+	// Simple language-appropriate mock response
+	var mockResponse string
+	if isTraditionalChinese {
+		mockResponse = "[模擬] 面試問題回應 - 這是測試用的模擬回應"
+	} else {
+		mockResponse = "[MOCK] Interview response - This is a test mock response"
+	}
 
 	return &ChatResponse{
-		Content:      mockResponses[responseIndex],
+		Content:      mockResponse,
 		FinishReason: "stop",
 		TokensUsed:   TokenUsage{PromptTokens: 10, CompletionTokens: 20, TotalTokens: 30},
 		Model:        "mock-model",
@@ -43,7 +47,7 @@ func (m *MockProvider) GenerateResponse(ctx context.Context, req *ChatRequest) (
 func (m *MockProvider) GenerateStreamResponse(ctx context.Context, req *ChatRequest) (<-chan *ChatResponse, error) {
 	ch := make(chan *ChatResponse, 1)
 	ch <- &ChatResponse{
-		Content:      "[MOCK] Thank you for your response. This is a streaming mock response that provides more detailed feedback and continues the conversation naturally.",
+		Content:      "[MOCK] Streaming response - This is a test mock streaming response",
 		FinishReason: "stop",
 		TokensUsed:   TokenUsage{PromptTokens: 10, CompletionTokens: 20, TotalTokens: 30},
 		Model:        "mock-model",
@@ -56,28 +60,27 @@ func (m *MockProvider) GenerateStreamResponse(ctx context.Context, req *ChatRequ
 }
 
 func (m *MockProvider) GenerateInterviewQuestions(ctx context.Context, req *QuestionGenerationRequest) (*QuestionGenerationResponse, error) {
-	// Generate more realistic mock questions
+	// Simple mock questions
 	questions := []InterviewQuestion{
 		{
-			Question:   "[MOCK] Can you walk me through your experience with software development and the technologies you've worked with?",
+			Question:   "[MOCK] Test question 1",
 			Category:   "technical",
 			Difficulty: "medium",
 		},
 		{
-			Question:   "[MOCK] Describe a challenging project you worked on and how you overcame the obstacles.",
+			Question:   "[MOCK] Test question 2",
 			Category:   "behavioral",
 			Difficulty: "medium",
 		},
 		{
-			Question:   "[MOCK] How do you approach debugging and troubleshooting complex issues?",
+			Question:   "[MOCK] Test question 3",
 			Category:   "technical",
 			Difficulty: "medium",
 		},
 	}
-
 	return &QuestionGenerationResponse{
 		Questions:  questions,
-		Rationale:  "[MOCK] These questions are designed to assess both technical competency and problem-solving abilities, providing a comprehensive evaluation of the candidate's skills and experience.",
+		Rationale:  "[MOCK] Simple test question rationale",
 		TokensUsed: TokenUsage{PromptTokens: 20, CompletionTokens: 40, TotalTokens: 60},
 		Provider:   "mock",
 		Model:      "mock-model",
@@ -86,33 +89,29 @@ func (m *MockProvider) GenerateInterviewQuestions(ctx context.Context, req *Ques
 }
 
 func (m *MockProvider) EvaluateAnswers(ctx context.Context, req *EvaluationRequest) (*EvaluationResponse, error) {
-	// Generate substantial mock evaluation feedback for testing
-	feedback := `[MOCK] Overall Performance Assessment:
+	// Simple language-appropriate mock evaluation
+	var feedback string
+	var strengths, weaknesses, recommendations []string
 
-Technical Competency: The candidate demonstrated solid understanding of core concepts and provided well-structured responses. Their approach to problem-solving shows logical thinking and attention to detail.
-
-Communication Skills: Responses were clear and articulate, showing good ability to explain complex technical concepts. The candidate maintained professional communication throughout.
-
-Areas of Strength:
-- Strong analytical thinking
-- Good communication skills
-- Relevant experience and knowledge
-- Professional demeanor and attitude
-
-Areas for Improvement:
-- Could provide more specific examples
-- Consider elaborating on implementation details
-- Opportunity to discuss alternative approaches
-
-Overall, this candidate shows promise and would benefit from continued development in the identified areas. The responses indicate readiness for the next level of technical challenges.`
+	if req.Language == "zh-TW" {
+		feedback = "[模擬] 測試用評估回饋"
+		strengths = []string{"[模擬] 測試優勢1", "[模擬] 測試優勢2"}
+		weaknesses = []string{"[模擬] 測試弱點1", "[模擬] 測試弱點2"}
+		recommendations = []string{"[模擬] 測試建議1", "[模擬] 測試建議2"}
+	} else {
+		feedback = "[MOCK] Test evaluation feedback"
+		strengths = []string{"[MOCK] Test strength 1", "[MOCK] Test strength 2"}
+		weaknesses = []string{"[MOCK] Test weakness 1", "[MOCK] Test weakness 2"}
+		recommendations = []string{"[MOCK] Test recommendation 1", "[MOCK] Test recommendation 2"}
+	}
 
 	return &EvaluationResponse{
 		OverallScore:    0.8,
 		CategoryScores:  map[string]float64{"technical": 0.8, "communication": 0.85, "problem_solving": 0.75},
 		Feedback:        feedback,
-		Strengths:       []string{"[MOCK] Strong analytical thinking", "[MOCK] Clear communication", "[MOCK] Relevant experience"},
-		Weaknesses:      []string{"[MOCK] Could provide more specific examples", "[MOCK] Opportunity for more detailed explanations"},
-		Recommendations: []string{"[MOCK] Continue developing technical skills", "[MOCK] Practice explaining complex concepts", "[MOCK] Seek opportunities for hands-on experience"},
+		Strengths:       strengths,
+		Weaknesses:      weaknesses,
+		Recommendations: recommendations,
 		TokensUsed:      TokenUsage{PromptTokens: 50, CompletionTokens: 150, TotalTokens: 200},
 		Provider:        "mock",
 		Model:           "mock-model",
