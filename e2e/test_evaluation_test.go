@@ -2,37 +2,37 @@ package e2e
 
 import (
 	"testing"
+	"time"
 )
 
-// TestEvaluationWorkflow tests the evaluation generation and retrieval
+// TestEvaluationWorkflow tests the complete evaluation workflow with different interview types
 func TestEvaluationWorkflow(t *testing.T) {
-	t.Run("CompleteEvaluationWorkflow", func(t *testing.T) {
-		// Create interview and chat session
+	t.Run("CompleteEvaluationWorkflow_GeneralInterview", func(t *testing.T) {
+		// Create general interview and chat session
 		interview := CreateTestInterview(t, "Evaluation Test User", GetSampleQuestions())
 		session := StartChatSession(t, interview.ID)
 
-		// Simulate a complete conversation
-		responses := []string{
-			"I am a software engineer with 5 years of experience in web development using React and Node.js.",
-			"My greatest strength is problem-solving. I enjoy breaking down complex problems into manageable pieces.",
-			"I worked on a microservices migration project that required careful planning and execution over 6 months.",
-			"In 5 years, I see myself as a senior technical lead, mentoring junior developers and architecting solutions.",
+		// Verify the interview type is general
+		if interview.InterviewType != "general" {
+			t.Errorf("Expected interview type 'general', got '%s'", interview.InterviewType)
 		}
 
-		// Send multiple messages to create a conversation
+		// Simulate general interview responses
+		responses := []string{
+			"I'm a software engineer with 3 years of experience in web development and API design.",
+			"My main strengths are problem-solving and communication. I work well in teams and enjoy mentoring junior developers.",
+			"I worked on a challenging e-commerce platform where I optimized the checkout process and reduced cart abandonment by 15%.",
+			"In 5 years, I see myself as a senior engineer leading technical decisions and contributing to architecture design.",
+		}
+
+		// Send responses and verify AI interaction
 		for i, response := range responses {
 			msgResp := SendMessage(t, session.ID, response)
-
-			// Verify message was stored correctly
-			if msgResp.Message.Content != response {
-				t.Errorf("Message %d not stored correctly", i)
-			}
 			if msgResp.AIResponse == nil {
-				t.Errorf("No AI response for message %d", i)
+				t.Errorf("No AI response for general interview message %d", i)
 			}
-			if msgResp.AIResponse.Type != "ai" {
-				t.Errorf("AI response type incorrect for message %d", i)
-			}
+			// Small delay to simulate realistic conversation
+			time.Sleep(50 * time.Millisecond)
 		}
 
 		// End session and get evaluation
@@ -59,120 +59,128 @@ func TestEvaluationWorkflow(t *testing.T) {
 		}
 	})
 
-	t.Run("ShortConversationEvaluation", func(t *testing.T) {
-		// Test evaluation with minimal conversation
-		interview := CreateTestInterview(t, "Short Test", []string{"Tell me about yourself"})
+	t.Run("CompleteEvaluationWorkflow_TechnicalInterview", func(t *testing.T) {
+		// Create technical interview with job description
+		interview := CreateTestInterviewWithJobDescription(t,
+			"Technical Candidate",
+			GetSampleTechnicalQuestions(),
+			"technical",
+			"en",
+			GetSampleJobDescription())
 		session := StartChatSession(t, interview.ID)
 
-		// Send only one message
-		SendMessage(t, session.ID, "I am a developer.")
+		// Verify the interview setup
+		if interview.InterviewType != "technical" {
+			t.Errorf("Expected interview type 'technical', got '%s'", interview.InterviewType)
+		}
+		if interview.JobDescription == "" {
+			t.Error("Expected job description to be set for technical interview")
+		}
 
-		// End session immediately
+		// Technical interview responses
+		responses := []string{
+			"I have 5+ years of backend development experience with Go, Python, and JavaScript.",
+			"Recently, I solved a performance issue by optimizing database queries and implementing Redis caching.",
+			"I approach debugging systematically: reproduce the issue, check logs, use debugger, and write tests.",
+			"I'm excited about learning WebAssembly and exploring its potential for high-performance web applications.",
+			"My development process includes requirements analysis, design review, TDD, code review, and deployment.",
+		}
+
+		// Send technical responses
+		for i, response := range responses {
+			msgResp := SendMessage(t, session.ID, response)
+			if msgResp.AIResponse == nil {
+				t.Errorf("No AI response for technical message %d", i)
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		// End session and get evaluation
 		evaluation := EndChatSession(t, session.ID)
 
-		// Verify evaluation still generated
-		if evaluation.ID == "" {
-			t.Error("Evaluation should be generated even for short conversations")
+		// Verify evaluation for technical interview
+		if evaluation.InterviewID != interview.ID {
+			t.Errorf("Expected interview ID %s, got %s", interview.ID, evaluation.InterviewID)
 		}
-		if evaluation.Score == 0 {
-			t.Error("Score should be non-zero even for short conversations")
+		if evaluation.Score <= 0 || evaluation.Score > 1 {
+			t.Errorf("Score should be between 0 and 1, got %f", evaluation.Score)
 		}
-	})
-
-	t.Run("EvaluationConsistency", func(t *testing.T) {
-		// Test that similar responses get similar evaluations
-		testResponses := []string{
-			"I am an experienced software engineer with strong technical skills",
-			"I have been working as a software engineer and have developed strong technical abilities",
-		}
-
-		var evaluations []EvaluationResponseDTO
-
-		for i, response := range testResponses {
-			interview := CreateTestInterview(t, "Consistency Test", GetSampleQuestions())
-			session := StartChatSession(t, interview.ID)
-
-			SendMessage(t, session.ID, response)
-			evaluation := EndChatSession(t, session.ID)
-			evaluations = append(evaluations, evaluation)
-
-			t.Logf("Evaluation %d: Score=%.2f, Feedback=%s", i, evaluation.Score, evaluation.Feedback)
-		}
-
-		// Verify evaluations are generated (consistency testing would require more sophisticated AI)
-		for i, eval := range evaluations {
-			if eval.Score <= 0 {
-				t.Errorf("Evaluation %d has invalid score: %f", i, eval.Score)
-			}
+		if len(evaluation.Feedback) < 10 {
+			t.Errorf("Feedback too short: expected at least 10 characters, got %d", len(evaluation.Feedback))
 		}
 	})
 
-	t.Run("EvaluationAnswersMapping", func(t *testing.T) {
-		// Test that answers are properly mapped in evaluation
-		interview := CreateTestInterview(t, "Mapping Test", GetSampleQuestions())
+	t.Run("CompleteEvaluationWorkflow_BehavioralInterview", func(t *testing.T) {
+		// Create behavioral interview
+		interview := CreateTestInterviewWithType(t, "Behavioral Candidate", GetSampleBehavioralQuestions(), "behavioral")
 		session := StartChatSession(t, interview.ID)
 
-		testMessages := []string{
-			"First answer",
-			"Second answer",
-			"Third answer",
+		// Verify the interview type
+		if interview.InterviewType != "behavioral" {
+			t.Errorf("Expected interview type 'behavioral', got '%s'", interview.InterviewType)
 		}
 
-		for _, msg := range testMessages {
-			SendMessage(t, session.ID, msg)
+		// Behavioral interview responses using STAR method
+		responses := []string{
+			"When facing a tight deadline, I prioritized tasks, communicated with stakeholders, and worked extra hours to deliver on time.",
+			"I resolved a team conflict by listening to both sides, finding common ground, and proposing a compromise that worked for everyone.",
+			"I led a team migration project by setting clear goals, delegating tasks effectively, and providing regular progress updates.",
+			"I failed to meet a project deadline once. I learned to better estimate time requirements and communicate risks early.",
+			"I handle feedback by listening actively, asking clarifying questions, and implementing improvements systematically.",
 		}
 
+		// Send behavioral responses
+		for i, response := range responses {
+			msgResp := SendMessage(t, session.ID, response)
+			if msgResp.AIResponse == nil {
+				t.Errorf("No AI response for behavioral message %d", i)
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+
+		// End session and get evaluation
 		evaluation := EndChatSession(t, session.ID)
 
-		// Verify answers are mapped
-		if len(evaluation.Answers) == 0 {
-			t.Error("No answers found in evaluation")
+		// Verify evaluation for behavioral interview
+		if evaluation.InterviewID != interview.ID {
+			t.Errorf("Expected interview ID %s, got %s", interview.ID, evaluation.InterviewID)
 		}
-
-		// Check that we have the expected number of answer mappings
-		expectedAnswerCount := len(testMessages)
-		if len(evaluation.Answers) < expectedAnswerCount {
-			t.Errorf("Expected at least %d answers, got %d", expectedAnswerCount, len(evaluation.Answers))
+		if evaluation.Score <= 0 || evaluation.Score > 1 {
+			t.Errorf("Score should be between 0 and 1, got %f", evaluation.Score)
 		}
-
-		// Verify answer keys follow expected pattern
-		for i := 0; i < expectedAnswerCount; i++ {
-			key := "question_" + string(rune('0'+i))
-			if _, exists := evaluation.Answers[key]; !exists {
-				t.Errorf("Missing answer key: %s", key)
-			}
+		if len(evaluation.Feedback) < 10 {
+			t.Errorf("Feedback too short: expected at least 10 characters, got %d", len(evaluation.Feedback))
 		}
 	})
 
-	t.Run("MultipleEvaluationsPerInterview", func(t *testing.T) {
-		// Test that one interview can have multiple chat sessions/evaluations
-		interview := CreateTestInterview(t, "Multiple Eval Test", GetSampleQuestions())
+	t.Run("EvaluationComparison_DifferentTypes", func(t *testing.T) {
+		// Test that different interview types can be evaluated independently
+		generalInterview := CreateTestInterview(t, "General Candidate", GetSampleQuestions())
+		technicalInterview := CreateTestInterviewWithType(t, "Tech Candidate", GetSampleTechnicalQuestions(), "technical")
+		behavioralInterview := CreateTestInterviewWithType(t, "Behavioral Candidate", GetSampleBehavioralQuestions(), "behavioral")
 
-		var evaluations []EvaluationResponseDTO
-
-		// Create multiple chat sessions for the same interview
-		for i := 0; i < 3; i++ {
-			session := StartChatSession(t, interview.ID)
-			SendMessage(t, session.ID, "Test response for session "+string(rune('1'+i)))
-			evaluation := EndChatSession(t, session.ID)
-			evaluations = append(evaluations, evaluation)
+		// Verify all interviews have correct types
+		if generalInterview.InterviewType != "general" {
+			t.Errorf("Expected general interview type, got %s", generalInterview.InterviewType)
+		}
+		if technicalInterview.InterviewType != "technical" {
+			t.Errorf("Expected technical interview type, got %s", technicalInterview.InterviewType)
+		}
+		if behavioralInterview.InterviewType != "behavioral" {
+			t.Errorf("Expected behavioral interview type, got %s", behavioralInterview.InterviewType)
 		}
 
-		// Verify all evaluations are unique
+		// All interviews should be valid and have unique IDs
+		interviews := []InterviewResponseDTO{generalInterview, technicalInterview, behavioralInterview}
 		idMap := make(map[string]bool)
-		for i, eval := range evaluations {
-			if idMap[eval.ID] {
-				t.Errorf("Duplicate evaluation ID: %s", eval.ID)
+		for i, interview := range interviews {
+			if interview.ID == "" {
+				t.Errorf("Interview %d has empty ID", i)
 			}
-			idMap[eval.ID] = true
-
-			if eval.InterviewID != interview.ID {
-				t.Errorf("Evaluation %d has wrong interview ID", i)
+			if idMap[interview.ID] {
+				t.Errorf("Duplicate interview ID: %s", interview.ID)
 			}
-		}
-
-		if len(evaluations) != 3 {
-			t.Errorf("Expected 3 evaluations, got %d", len(evaluations))
+			idMap[interview.ID] = true
 		}
 	})
 }

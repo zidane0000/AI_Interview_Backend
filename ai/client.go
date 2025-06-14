@@ -12,6 +12,20 @@ type AIClient struct {
 }
 
 // Global AI client instance (automatically loads .env configuration)
+// TODO: ARCHITECTURAL CONCERN - Global client design issues:
+// - Testing difficulties: Hard to mock or inject test doubles
+// - Tight coupling: All code tightly coupled to single global instance
+// - Configuration inflexibility: Can't have different configs for different use cases
+// - Concurrency concerns: Global state can lead to race conditions
+// - Initialization order dependencies: Must be initialized before use
+//
+// FUTURE REFACTORING PLAN:
+// 1. Introduce dependency injection in handlers
+// 2. Make the global client optional/deprecated
+// 3. Improve testability with proper mocking
+// 4. Consider service container or context-based injection
+//
+// For now keeping global client to focus on fixing failing tests first.
 var Client = NewAutoAIClient()
 
 // NewAutoAIClient initializes the AI client using the best available API key (OpenAI > Gemini > none)
@@ -23,12 +37,10 @@ func NewAutoAIClient() *AIClient {
 	if config.OpenAIAPIKey != "" {
 		config.DefaultProvider = ProviderOpenAI
 		config.DefaultModel = "gpt-4o"
-
 	} else if config.GeminiAPIKey != "" {
 		config.DefaultProvider = ProviderGemini
 		config.DefaultModel = "gemini-2.0-flash"
 	}
-	fmt.Printf("Using AI provider: %s and model: %s\n", config.DefaultProvider, config.DefaultModel)
 
 	return &AIClient{
 		enhancedClient: NewEnhancedAIClient(config),
@@ -185,4 +197,14 @@ func (c *AIClient) SwitchProvider(providerName string) error {
 
 	c.enhancedClient.config.DefaultProvider = providerName
 	return nil
+}
+
+// GetCurrentProvider returns the currently configured AI provider
+func (c *AIClient) GetCurrentProvider() string {
+	return c.enhancedClient.config.DefaultProvider
+}
+
+// GetCurrentModel returns the currently configured AI model
+func (c *AIClient) GetCurrentModel() string {
+	return c.enhancedClient.config.DefaultModel
 }

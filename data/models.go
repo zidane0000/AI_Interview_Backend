@@ -14,6 +14,13 @@ const (
 	LanguageTraditionalChinese = "zh-TW"
 )
 
+// Interview type constants
+const (
+	InterviewTypeGeneral    = "general"
+	InterviewTypeTechnical  = "technical"
+	InterviewTypeBehavioral = "behavioral"
+)
+
 // ValidateLanguage checks if the provided language code is supported
 func ValidateLanguage(lang string) bool {
 	return lang == LanguageEnglish || lang == LanguageTraditionalChinese
@@ -30,6 +37,26 @@ func GetValidatedLanguage(lang string) string {
 		return lang
 	}
 	return GetDefaultLanguage()
+}
+
+// ValidateInterviewType checks if the provided interview type is supported
+func ValidateInterviewType(interviewType string) bool {
+	return interviewType == InterviewTypeGeneral ||
+		interviewType == InterviewTypeTechnical ||
+		interviewType == InterviewTypeBehavioral
+}
+
+// GetDefaultInterviewType returns the default interview type when none is specified
+func GetDefaultInterviewType() string {
+	return InterviewTypeGeneral
+}
+
+// GetValidatedInterviewType returns a valid interview type, defaulting to general if invalid
+func GetValidatedInterviewType(interviewType string) string {
+	if ValidateInterviewType(interviewType) {
+		return interviewType
+	}
+	return GetDefaultInterviewType()
 }
 
 // StringArray is a custom type for handling PostgreSQL arrays with GORM
@@ -90,14 +117,16 @@ func (s StringMap) Value() (driver.Value, error) {
 
 // Interview model with proper GORM tags
 type Interview struct {
-	ID            string      `gorm:"primaryKey;type:varchar(255)" json:"id"`
-	CandidateName string      `gorm:"type:varchar(255);not null" json:"candidate_name"`
-	Questions     StringArray `gorm:"type:jsonb" json:"questions"`
-	Language      string      `gorm:"type:varchar(10);not null;default:'en'" json:"language"`  // Interview language: "en" or "zh-TW"
-	Status        string      `gorm:"type:varchar(50);not null;default:'draft'" json:"status"` // "draft", "active", "completed"
-	Type          string      `gorm:"type:varchar(50);not null" json:"type"`                   // "general", "technical", "behavioral"
-	CreatedAt     time.Time   `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt     time.Time   `gorm:"autoUpdateTime" json:"updated_at"`
+	ID             string      `gorm:"primaryKey;type:varchar(255)" json:"id"`
+	CandidateName  string      `gorm:"type:varchar(255);not null" json:"candidate_name"`
+	Questions      StringArray `gorm:"type:jsonb" json:"questions"`
+	Language       string      `gorm:"type:varchar(10);not null;default:'en'" json:"language"`  // Interview language: "en" or "zh-TW"
+	Status         string      `gorm:"type:varchar(50);not null;default:'draft'" json:"status"` // "draft", "active", "completed"
+	Type           string      `gorm:"type:varchar(50);not null" json:"type"`                   // "general", "technical", "behavioral"
+	JobDescription string      `gorm:"type:text" json:"job_description,omitempty"`              // Optional: Job description text
+	// TODO: Resume file support will be added in future iteration
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
 
 // Evaluation model with proper GORM tags

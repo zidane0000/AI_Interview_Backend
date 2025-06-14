@@ -59,6 +59,16 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate required interview_type field
+	if req.InterviewType == "" {
+		writeJSONError(w, http.StatusBadRequest, "Missing interview_type field")
+		return
+	}
+	if !data.ValidateInterviewType(req.InterviewType) {
+		writeJSONError(w, http.StatusBadRequest, "Invalid interview_type. Supported types: general, technical, behavioral")
+		return
+	}
+
 	// Validate language if provided
 	if req.InterviewLanguage != "" && !data.ValidateLanguage(req.InterviewLanguage) {
 		writeJSONError(w, http.StatusBadRequest, "Invalid language code. Supported languages: en, zh-TW")
@@ -71,12 +81,14 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate unique ID and create interview record
 	interviewID := data.GenerateID()
 	interview := &data.Interview{
-		ID:            interviewID,
-		CandidateName: req.CandidateName,
-		Questions:     req.Questions,
-		Language:      language,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
+		ID:             interviewID,
+		CandidateName:  req.CandidateName,
+		Questions:      req.Questions,
+		Type:           req.InterviewType, // Map InterviewType to Type field
+		Language:       language,
+		JobDescription: req.JobDescription, // Add job description (optional)
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
 	}
 	// Store interview in hybrid store
 	err := data.GlobalStore.CreateInterview(interview)
@@ -86,11 +98,13 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := InterviewResponseDTO{
-		ID:            interview.ID,
-		CandidateName: interview.CandidateName,
-		Questions:     interview.Questions,
-		Language:      interview.Language,
-		CreatedAt:     interview.CreatedAt,
+		ID:             interview.ID,
+		CandidateName:  interview.CandidateName,
+		Questions:      interview.Questions,
+		InterviewType:  interview.Type, // Map Type back to InterviewType
+		Language:       interview.Language,
+		JobDescription: interview.JobDescription, // Include job description in response
+		CreatedAt:      interview.CreatedAt,
 	}
 	writeJSON(w, http.StatusCreated, resp)
 }
@@ -140,11 +154,13 @@ func ListInterviewsHandler(w http.ResponseWriter, r *http.Request) {
 	interviewDTOs := make([]InterviewResponseDTO, len(result.Interviews))
 	for i, interview := range result.Interviews {
 		interviewDTOs[i] = InterviewResponseDTO{
-			ID:            interview.ID,
-			CandidateName: interview.CandidateName,
-			Questions:     interview.Questions,
-			Language:      interview.Language,
-			CreatedAt:     interview.CreatedAt,
+			ID:             interview.ID,
+			CandidateName:  interview.CandidateName,
+			Questions:      interview.Questions,
+			InterviewType:  interview.Type, // Map Type to InterviewType
+			Language:       interview.Language,
+			JobDescription: interview.JobDescription, // Include job description
+			CreatedAt:      interview.CreatedAt,
 		}
 	}
 
@@ -167,13 +183,14 @@ func GetInterviewHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusNotFound, "Interview not found")
 		return
 	}
-
 	resp := InterviewResponseDTO{
-		ID:            interview.ID,
-		CandidateName: interview.CandidateName,
-		Questions:     interview.Questions,
-		Language:      interview.Language,
-		CreatedAt:     interview.CreatedAt,
+		ID:             interview.ID,
+		CandidateName:  interview.CandidateName,
+		Questions:      interview.Questions,
+		InterviewType:  interview.Type, // Map Type to InterviewType
+		Language:       interview.Language,
+		JobDescription: interview.JobDescription, // Include job description
+		CreatedAt:      interview.CreatedAt,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

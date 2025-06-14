@@ -16,15 +16,21 @@ import "time"
 type CreateInterviewRequestDTO struct {
 	CandidateName     string   `json:"candidate_name"`
 	Questions         []string `json:"questions"`
+	InterviewType     string   `json:"interview_type"`               // Required: "general", "technical", or "behavioral"
 	InterviewLanguage string   `json:"interview_language,omitempty"` // Language preference: "en" or "zh-TW"
+	JobDescription    string   `json:"job_description,omitempty"`    // Optional: Job description text
+	// TODO: Resume file upload support will be added in future iteration
 }
 
 type InterviewResponseDTO struct {
-	ID            string    `json:"id"`
-	CandidateName string    `json:"candidate_name"`
-	Questions     []string  `json:"questions"`
-	Language      string    `json:"language"` // Language preference: "en" or "zh-TW"
-	CreatedAt     time.Time `json:"created_at"`
+	ID             string   `json:"id"`
+	CandidateName  string   `json:"candidate_name"`
+	Questions      []string `json:"questions"`
+	InterviewType  string   `json:"interview_type"`            // "general", "technical", or "behavioral"
+	Language       string   `json:"language"`                  // Language preference: "en" or "zh-TW"
+	JobDescription string   `json:"job_description,omitempty"` // Optional: Job description text
+	// TODO: Resume file support will be added in future iteration
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type ListInterviewsResponseDTO struct {

@@ -142,6 +142,7 @@ func TestCreateInterviewWithLanguage(t *testing.T) {
 			payload := map[string]interface{}{
 				"candidate_name": "Test Candidate",
 				"questions":      GetSampleQuestions(),
+				"interview_type": "general", // Required field
 			}
 
 			// Add language field if provided (handles both strings and invalid types)
@@ -187,6 +188,36 @@ func TestCreateInterviewWithLanguage(t *testing.T) {
 			}
 		})
 	}
+
+	// Additional tests for interview types
+	t.Run("CreateInterview_TechnicalWithLanguage", func(t *testing.T) {
+		// Test technical interview with Traditional Chinese
+		interview := CreateTestInterviewWithTypeAndLanguage(t, "技術面試候選人", GetSampleTechnicalQuestions(), "technical", "zh-TW")
+
+		// Verify interview type and language
+		if interview.InterviewType != "technical" {
+			t.Errorf("Expected interview type 'technical', got '%s'", interview.InterviewType)
+		}
+		if interview.Language != "zh-TW" {
+			t.Errorf("Expected language 'zh-TW', got '%s'", interview.Language)
+		}
+		if interview.CandidateName != "技術面試候選人" {
+			t.Errorf("Expected candidate name '技術面試候選人', got '%s'", interview.CandidateName)
+		}
+	})
+
+	t.Run("CreateInterview_BehavioralWithLanguage", func(t *testing.T) {
+		// Test behavioral interview with English
+		interview := CreateTestInterviewWithTypeAndLanguage(t, "Behavioral Candidate", GetSampleBehavioralQuestions(), "behavioral", "en")
+
+		// Verify interview type and language
+		if interview.InterviewType != "behavioral" {
+			t.Errorf("Expected interview type 'behavioral', got '%s'", interview.InterviewType)
+		}
+		if interview.Language != "en" {
+			t.Errorf("Expected language 'en', got '%s'", interview.Language)
+		}
+	})
 }
 
 // TestAIQuestionGenerationLanguage tests AI question generation in different languages
@@ -330,11 +361,11 @@ func TestCompleteLanguageWorkflow(t *testing.T) {
 	// Test complete workflow: Create interview → Start chat → Send messages → End chat → Get evaluation
 	// Create interview with Traditional Chinese
 	interview := CreateTestInterviewWithLanguage(t, "測試候選人", GetSampleQuestions(), "zh-TW")
-	fmt.Printf("Created interview with ID: %s\n", interview.ID)
+	t.Logf("Created interview with ID: %s", interview.ID)
 
 	// Start chat session
 	chatSession := StartChatSession(t, interview.ID)
-	fmt.Printf("Started chat session with ID: %s\n", chatSession.ID)
+	t.Logf("Started chat session with ID: %s", chatSession.ID)
 
 	// Send multiple messages
 	messages := []string{
@@ -348,7 +379,7 @@ func TestCompleteLanguageWorkflow(t *testing.T) {
 		if response.AIResponse == nil {
 			t.Errorf("AI should respond to message: %s", msg)
 		}
-		fmt.Printf("Sent: %s, AI Response: %s\n", msg, response.AIResponse.Content)
+		t.Logf("Sent: %s, AI Response: %s", msg, response.AIResponse.Content)
 	}
 	// End session and get evaluation
 	evaluation := EndChatSession(t, chatSession.ID)
@@ -371,5 +402,5 @@ func TestCompleteLanguageWorkflow(t *testing.T) {
 		t.Logf("Actual feedback: %s", evaluation.Feedback)
 	}
 
-	fmt.Printf("Evaluation Score: %.2f, Feedback: %s\n", evaluation.Score, evaluation.Feedback)
+	t.Logf("Evaluation Score: %.2f, Feedback: %s", evaluation.Score, evaluation.Feedback)
 }

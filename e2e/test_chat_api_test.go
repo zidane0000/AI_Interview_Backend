@@ -1,14 +1,13 @@
 package e2e
 
 import (
-	"fmt"
 	"testing"
 )
 
 func TestChatAPI(t *testing.T) {
 	// Step 1: Create an interview first
 	interview := CreateTestInterview(t, "測試候選人", []string{"Tell me about yourself", "What are your strengths?"})
-	fmt.Printf("Created interview: %+v\n", interview)
+	t.Logf("Created interview: %+v", interview)
 
 	// Step 2: Start chat session
 	chatSession := StartChatSession(t, interview.ID)

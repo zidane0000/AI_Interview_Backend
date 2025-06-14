@@ -89,7 +89,6 @@ func (c *EnhancedAIClient) registerProvider(name string, provider AIProvider) {
 
 	c.providers[name] = provider
 	c.metrics.ProviderStats[name] = &ProviderStats{}
-	log.Printf("Registered AI provider: %s", name)
 }
 
 // GetProvider returns the specified provider or default

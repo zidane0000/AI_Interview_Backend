@@ -21,6 +21,9 @@ func TestInterviewCRUD(t *testing.T) {
 		if interview.CandidateName != "John Doe" {
 			t.Errorf("Expected candidate name 'John Doe', got '%s'", interview.CandidateName)
 		}
+		if interview.InterviewType != "general" {
+			t.Errorf("Expected interview type 'general', got '%s'", interview.InterviewType)
+		}
 		if len(interview.Questions) != len(GetSampleQuestions()) {
 			t.Errorf("Expected %d questions, got %d", len(GetSampleQuestions()), len(interview.Questions))
 		}
@@ -34,6 +37,70 @@ func TestInterviewCRUD(t *testing.T) {
 			if question != expectedQuestions[i] {
 				t.Errorf("Question %d mismatch: expected '%s', got '%s'", i, expectedQuestions[i], question)
 			}
+		}
+	})
+
+	t.Run("CreateInterview_WithAllFields", func(t *testing.T) {
+		// Test creating interview with all fields including job description
+		interview := CreateTestInterviewWithFullDetails(t, "Jane Smith", GetSampleTechnicalQuestions(), "technical", "en", GetSampleJobDescription())
+
+		// Verify all fields are properly set
+		if interview.CandidateName != "Jane Smith" {
+			t.Errorf("Expected candidate name 'Jane Smith', got '%s'", interview.CandidateName)
+		}
+		if interview.InterviewType != "technical" {
+			t.Errorf("Expected interview type 'technical', got '%s'", interview.InterviewType)
+		}
+		if interview.JobDescription != GetSampleJobDescription() {
+			t.Errorf("Job description not saved correctly")
+		}
+		if interview.Language != "en" {
+			t.Errorf("Expected language 'en', got '%s'", interview.Language)
+		}
+		if len(interview.Questions) != len(GetSampleTechnicalQuestions()) {
+			t.Errorf("Expected %d questions, got %d", len(GetSampleTechnicalQuestions()), len(interview.Questions))
+		}
+	})
+
+	t.Run("CreateInterview_DifferentTypes", func(t *testing.T) {
+		testCases := []struct {
+			interviewType       string
+			questions           []string
+			shouldHaveQuestions bool
+		}{
+			{
+				interviewType:       "general",
+				questions:           GetSampleQuestions(),
+				shouldHaveQuestions: true,
+			},
+			{
+				interviewType:       "technical",
+				questions:           GetSampleTechnicalQuestions(),
+				shouldHaveQuestions: true,
+			},
+			{
+				interviewType:       "behavioral",
+				questions:           GetSampleBehavioralQuestions(),
+				shouldHaveQuestions: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(fmt.Sprintf("Type_%s", tc.interviewType), func(t *testing.T) {
+				interview := CreateTestInterviewWithType(t, "Test Candidate", tc.questions, tc.interviewType)
+
+				if interview.InterviewType != tc.interviewType {
+					t.Errorf("Expected interview type '%s', got '%s'", tc.interviewType, interview.InterviewType)
+				}
+
+				if tc.shouldHaveQuestions && len(interview.Questions) != len(tc.questions) {
+					t.Errorf("Expected %d questions, got %d", len(tc.questions), len(interview.Questions))
+				} // Verify default fields when optional ones are not provided
+				if interview.JobDescription != "" {
+					t.Errorf("Expected empty job description, got '%s'", interview.JobDescription)
+				}
+				// TODO: Resume support will be added later
+			})
 		}
 	})
 

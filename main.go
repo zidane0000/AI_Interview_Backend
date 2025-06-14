@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/zidane0000/AI_Interview_Backend/ai"
 	"github.com/zidane0000/AI_Interview_Backend/api"
 	"github.com/zidane0000/AI_Interview_Backend/config"
 	"github.com/zidane0000/AI_Interview_Backend/data"
@@ -81,9 +82,13 @@ func main() {
 	// if err := data.GlobalStore.Health(); err != nil {
 	//     log.Fatalf("store health check failed: %v", err)
 	// }
-
 	// Initialize AI service client (global client is already initialized with .env support)
 	fmt.Println("AI client initialized with .env configuration")
+
+	// Log AI provider information for operational visibility
+	if ai.Client != nil {
+		fmt.Printf("Using AI provider: %s with model: %s\n", ai.Client.GetCurrentProvider(), ai.Client.GetCurrentModel())
+	}
 
 	// TODO: Add AI service validation
 	// if err := ai.Client.TestConnection(); err != nil {

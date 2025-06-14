@@ -27,6 +27,7 @@ func TestCreateInterviewHandler_Success(t *testing.T) {
 	body := CreateInterviewRequestDTO{
 		CandidateName: "Alice",
 		Questions:     []string{"Q1", "Q2"},
+		InterviewType: "general", // Add required interview type
 	}
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest("POST", "/interviews", bytes.NewReader(b))
@@ -86,9 +87,9 @@ func TestListInterviewsHandler_WithData(t *testing.T) {
 
 	// Create multiple test interviews
 	interviews := []CreateInterviewRequestDTO{
-		{CandidateName: "Alice Johnson", Questions: []string{"Q1", "Q2"}},
-		{CandidateName: "Bob Smith", Questions: []string{"Q3", "Q4"}},
-		{CandidateName: "Charlie Brown", Questions: []string{"Q5", "Q6"}},
+		{CandidateName: "Alice Johnson", Questions: []string{"Q1", "Q2"}, InterviewType: "general"},
+		{CandidateName: "Bob Smith", Questions: []string{"Q3", "Q4"}, InterviewType: "technical"},
+		{CandidateName: "Charlie Brown", Questions: []string{"Q5", "Q6"}, InterviewType: "behavioral"},
 	}
 
 	// Create interviews
@@ -132,6 +133,7 @@ func TestListInterviewsHandler_Pagination(t *testing.T) {
 		interview := CreateInterviewRequestDTO{
 			CandidateName: fmt.Sprintf("Candidate %d", i),
 			Questions:     []string{"Q1", "Q2"},
+			InterviewType: "general", // Add required interview type
 		}
 		b, _ := json.Marshal(interview)
 		req := httptest.NewRequest("POST", "/interviews", bytes.NewReader(b))
@@ -188,9 +190,9 @@ func TestListInterviewsHandler_Filtering(t *testing.T) {
 
 	// Create test interviews with different names
 	interviews := []CreateInterviewRequestDTO{
-		{CandidateName: "Alice Johnson", Questions: []string{"Q1", "Q2"}},
-		{CandidateName: "Bob Alice", Questions: []string{"Q3", "Q4"}},
-		{CandidateName: "Charlie Brown", Questions: []string{"Q5", "Q6"}},
+		{CandidateName: "Alice Johnson", Questions: []string{"Q1", "Q2"}, InterviewType: "general"},
+		{CandidateName: "Bob Alice", Questions: []string{"Q3", "Q4"}, InterviewType: "technical"},
+		{CandidateName: "Charlie Brown", Questions: []string{"Q5", "Q6"}, InterviewType: "behavioral"},
 	}
 
 	for _, interview := range interviews {
@@ -237,9 +239,9 @@ func TestListInterviewsHandler_Sorting(t *testing.T) {
 
 	// Create test interviews in a specific order
 	interviews := []CreateInterviewRequestDTO{
-		{CandidateName: "Charlie Brown", Questions: []string{"Q1", "Q2"}},
-		{CandidateName: "Alice Johnson", Questions: []string{"Q3", "Q4"}},
-		{CandidateName: "Bob Smith", Questions: []string{"Q5", "Q6"}},
+		{CandidateName: "Charlie Brown", Questions: []string{"Q1", "Q2"}, InterviewType: "general"},
+		{CandidateName: "Alice Johnson", Questions: []string{"Q3", "Q4"}, InterviewType: "technical"},
+		{CandidateName: "Bob Smith", Questions: []string{"Q5", "Q6"}, InterviewType: "behavioral"},
 	}
 
 	for _, interview := range interviews {
@@ -298,6 +300,7 @@ func TestGetInterviewHandler_Success(t *testing.T) {
 	createBody := CreateInterviewRequestDTO{
 		CandidateName: "Test User",
 		Questions:     []string{"Q1", "Q2"},
+		InterviewType: "general", // Add required interview type
 	}
 	b, _ := json.Marshal(createBody)
 	createReq := httptest.NewRequest("POST", "/interviews", bytes.NewReader(b))

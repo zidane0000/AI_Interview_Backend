@@ -8,16 +8,23 @@ import (
 // TestCompleteWorkflows tests end-to-end interview workflows
 func TestCompleteWorkflows(t *testing.T) {
 	t.Run("FullInterviewWorkflow_Technical", func(t *testing.T) {
-		// Technical interview simulation
-		questions := []string{
-			"Explain the difference between SQL and NoSQL databases",
-			"How would you design a scalable web application?",
-			"What are the SOLID principles in software engineering?",
-			"Describe your experience with microservices architecture",
-		}
-
-		interview := CreateTestInterview(t, "Alice Johnson - Senior Developer", questions)
+		// Technical interview simulation with job description
+		interview := CreateTestInterviewWithFullDetails(t,
+			"Alice Johnson - Senior Developer",
+			GetSampleTechnicalQuestions(),
+			"technical",
+			"en",
+			GetSampleJobDescription())
 		session := StartChatSession(t, interview.ID)
+
+		// Verify interview setup
+		if interview.InterviewType != "technical" {
+			t.Errorf("Expected technical interview, got %s", interview.InterviewType)
+		}
+		if interview.JobDescription == "" {
+			t.Error("Job description should be included in technical interview")
+		}
+		// TODO: Resume support will be added later
 
 		// Verify initial AI greeting
 		if len(session.Messages) != 1 {
@@ -27,12 +34,13 @@ func TestCompleteWorkflows(t *testing.T) {
 			t.Error("First message should be from AI")
 		}
 
-		// Simulate technical responses
+		// Simulate technical responses aligned with the sample questions
 		technicalResponses := []string{
-			"SQL databases use structured schemas and ACID properties, while NoSQL databases offer flexible schemas and eventual consistency. SQL is better for complex relationships, NoSQL for horizontal scaling.",
-			"I would use microservices architecture with API Gateway, implement caching with Redis, use CDN for static assets, and containerize with Docker for easy scaling.",
-			"SOLID principles are Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, and Dependency Inversion. They help create maintainable and extensible code.",
-			"I've worked with microservices using Spring Boot and Docker. Key challenges include service discovery, distributed transactions, and monitoring across services.",
+			"I have 5+ years of backend development experience with Go, Python, and JavaScript. I've built REST APIs and worked with PostgreSQL and Redis.",
+			"Recently, I solved a memory leak in our microservice by profiling the application and optimizing object lifecycle management.",
+			"I approach debugging systematically: reproduce the issue, check logs, use debugger, isolate variables, and write regression tests.",
+			"I'm excited about learning WebAssembly for high-performance web applications and exploring serverless architectures.",
+			"My development process includes requirements analysis, API design, TDD, code review, CI/CD, and monitoring.",
 		}
 
 		for i, response := range technicalResponses {
@@ -76,22 +84,21 @@ func TestCompleteWorkflows(t *testing.T) {
 
 	t.Run("FullInterviewWorkflow_Behavioral", func(t *testing.T) {
 		// Behavioral interview simulation
-		questions := []string{
-			"Tell me about a time you had to work with a difficult team member",
-			"Describe a situation where you had to learn something new quickly",
-			"How do you handle tight deadlines and pressure?",
-			"Give an example of a project where you took initiative",
-		}
-
-		interview := CreateTestInterview(t, "Bob Smith - Product Manager", questions)
+		interview := CreateTestInterviewWithType(t, "Bob Smith - Product Manager", GetSampleBehavioralQuestions(), "behavioral")
 		session := StartChatSession(t, interview.ID)
 
-		// Simulate behavioral responses using STAR method
+		// Verify interview setup
+		if interview.InterviewType != "behavioral" {
+			t.Errorf("Expected behavioral interview, got %s", interview.InterviewType)
+		}
+
+		// Simulate behavioral responses using STAR method aligned with sample questions
 		behavioralResponses := []string{
-			"In my previous role, I worked with a colleague who was resistant to new processes. I scheduled one-on-one meetings to understand their concerns, found common ground, and gradually introduced changes with their input.",
-			"When our team adopted React Native, I had one week to learn it for a client demo. I created a learning schedule, used online tutorials, built practice apps, and successfully delivered the demo on time.",
-			"I use prioritization techniques like the Eisenhower Matrix. During a critical product launch, I broke tasks into smaller chunks, delegated appropriately, and maintained clear communication with stakeholders.",
-			"I noticed our deployment process was causing delays. I researched CI/CD solutions, proposed implementing GitHub Actions, got team buy-in, and reduced deployment time from 2 hours to 15 minutes.",
+			"When facing a tight deadline for a product launch, I prioritized critical features, communicated delays early, and worked with the team to deliver a solid MVP on time.",
+			"I had to resolve a conflict between two team members by facilitating a discussion, helping them understand each other's perspectives, and establishing clear collaboration guidelines.",
+			"When promoted to team lead, I took initiative by organizing regular one-on-ones, implementing code review processes, and mentoring junior developers.",
+			"I failed to meet a quarterly goal once due to underestimating complexity. I learned to break down tasks better, communicate risks early, and ask for help when needed.",
+			"I handle feedback by listening actively, asking clarifying questions, reflecting on the input, and creating action plans for improvement.",
 		}
 
 		for _, response := range behavioralResponses {
