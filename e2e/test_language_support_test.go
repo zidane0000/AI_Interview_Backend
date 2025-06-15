@@ -167,10 +167,10 @@ func TestCreateInterviewWithLanguage(t *testing.T) {
 					t.Fatalf("Failed to unmarshal interview response: %v", err)
 				}
 
-				// CRITICAL CHECK: Language field MUST exist in response
-				languageField, hasLanguage := response["language"]
+				// CRITICAL CHECK: Interview language field MUST exist in response
+				languageField, hasLanguage := response["interview_language"]
 				if !hasLanguage {
-					t.Errorf("Response missing 'language' field")
+					t.Errorf("Response missing 'interview_language' field")
 					t.Logf("Response: %+v", response)
 					return
 				}
@@ -198,8 +198,8 @@ func TestCreateInterviewWithLanguage(t *testing.T) {
 		if interview.InterviewType != "technical" {
 			t.Errorf("Expected interview type 'technical', got '%s'", interview.InterviewType)
 		}
-		if interview.Language != "zh-TW" {
-			t.Errorf("Expected language 'zh-TW', got '%s'", interview.Language)
+		if interview.InterviewLanguage != "zh-TW" {
+			t.Errorf("Expected language 'zh-TW', got '%s'", interview.InterviewLanguage)
 		}
 		if interview.CandidateName != "技術面試候選人" {
 			t.Errorf("Expected candidate name '技術面試候選人', got '%s'", interview.CandidateName)
@@ -214,8 +214,8 @@ func TestCreateInterviewWithLanguage(t *testing.T) {
 		if interview.InterviewType != "behavioral" {
 			t.Errorf("Expected interview type 'behavioral', got '%s'", interview.InterviewType)
 		}
-		if interview.Language != "en" {
-			t.Errorf("Expected language 'en', got '%s'", interview.Language)
+		if interview.InterviewLanguage != "en" {
+			t.Errorf("Expected language 'en', got '%s'", interview.InterviewLanguage)
 		}
 	})
 }
@@ -248,7 +248,7 @@ func TestAIQuestionGenerationLanguage(t *testing.T) {
 			interview := CreateTestInterviewWithLanguage(t, tt.candidateName, GetSampleQuestions(), tt.language)
 
 			// DEBUG: Log the created interview details
-			t.Logf("Created interview - Language: %s, Expected: %s", interview.Language, tt.language)
+			t.Logf("Created interview - Language: %s, Expected: %s", interview.InterviewLanguage, tt.language)
 
 			chatSession := StartChatSession(t, interview.ID)
 
@@ -287,11 +287,10 @@ func TestChatSessionLanguagePersistence(t *testing.T) {
 	if err := json.Unmarshal(body, &chatResponse); err != nil {
 		t.Fatalf("Failed to decode chat session: %v", err)
 	}
-
 	// CRITICAL CHECK: Chat session must have language field
-	languageField, hasLanguage := chatResponse["language"]
+	languageField, hasLanguage := chatResponse["session_language"]
 	if !hasLanguage {
-		t.Errorf("Chat session missing 'language' field")
+		t.Errorf("Chat session missing 'session_language' field")
 		t.Logf("Chat Response: %+v", chatResponse)
 		return
 	}

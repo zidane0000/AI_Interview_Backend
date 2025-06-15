@@ -4,10 +4,11 @@ package ai
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
 // EnhancedAIClient provides a unified interface to multiple AI providers
@@ -226,11 +227,15 @@ func (c *EnhancedAIClient) GenerateResponse(ctx context.Context, req *ChatReques
 		if lastErr == nil {
 			break
 		}
-
 		if i < c.config.MaxRetries {
-			// Exponential backoff
-			backoffDuration := time.Duration(1<<uint(i)) * time.Second
-			log.Printf("AI request failed (attempt %d/%d), retrying in %v: %v",
+			// Exponential backoff with overflow protection
+			// Use safe integer arithmetic to avoid gosec warnings
+			backoffSeconds := 1
+			for shift := 0; shift < i && shift < 10; shift++ {
+				backoffSeconds *= 2 // 2^shift, capped at 2^10 = 1024 seconds
+			}
+			backoffDuration := time.Duration(backoffSeconds) * time.Second
+			utils.Errorf("AI request failed (attempt %d/%d), retrying in %v: %v",
 				i+1, c.config.MaxRetries+1, backoffDuration, lastErr)
 			time.Sleep(backoffDuration)
 		}

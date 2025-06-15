@@ -4,7 +4,6 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/zidane0000/AI_Interview_Backend/ai"
 	"github.com/zidane0000/AI_Interview_Backend/data"
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
 // Helper: parse integer query parameter with default value
@@ -29,7 +29,7 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		log.Printf("failed to encode JSON: %v", err)
+		utils.Errorf("failed to encode JSON: %v", err)
 	}
 }
 
@@ -43,7 +43,7 @@ func writeJSONError(w http.ResponseWriter, status int, msg string, details ...st
 	}
 
 	if err := json.NewEncoder(w).Encode(errResp); err != nil {
-		log.Printf("failed to encode JSON: %v", err)
+		utils.Errorf("failed to encode JSON: %v", err)
 	}
 }
 
@@ -74,21 +74,20 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Invalid language code. Supported languages: en, zh-TW")
 		return
 	}
-
 	// Process language parameter with default fallback
-	language := data.GetValidatedLanguage(req.InterviewLanguage)
+	interviewLanguage := data.GetValidatedLanguage(req.InterviewLanguage)
 
 	// Generate unique ID and create interview record
 	interviewID := data.GenerateID()
 	interview := &data.Interview{
-		ID:             interviewID,
-		CandidateName:  req.CandidateName,
-		Questions:      req.Questions,
-		Type:           req.InterviewType, // Map InterviewType to Type field
-		Language:       language,
-		JobDescription: req.JobDescription, // Add job description (optional)
-		CreatedAt:      time.Now(),
-		UpdatedAt:      time.Now(),
+		ID:                interviewID,
+		CandidateName:     req.CandidateName,
+		Questions:         req.Questions,
+		InterviewType:     req.InterviewType,
+		InterviewLanguage: interviewLanguage,
+		JobDescription:    req.JobDescription, // Add job description (optional)
+		CreatedAt:         time.Now(),
+		UpdatedAt:         time.Now(),
 	}
 	// Store interview in hybrid store
 	err := data.GlobalStore.CreateInterview(interview)
@@ -98,13 +97,13 @@ func CreateInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := InterviewResponseDTO{
-		ID:             interview.ID,
-		CandidateName:  interview.CandidateName,
-		Questions:      interview.Questions,
-		InterviewType:  interview.Type, // Map Type back to InterviewType
-		Language:       interview.Language,
-		JobDescription: interview.JobDescription, // Include job description in response
-		CreatedAt:      interview.CreatedAt,
+		ID:                interview.ID,
+		CandidateName:     interview.CandidateName,
+		Questions:         interview.Questions,
+		InterviewType:     interview.InterviewType,
+		InterviewLanguage: interview.InterviewLanguage,
+		JobDescription:    interview.JobDescription, // Include job description in response
+		CreatedAt:         interview.CreatedAt,
 	}
 	writeJSON(w, http.StatusCreated, resp)
 }
@@ -149,18 +148,17 @@ func ListInterviewsHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to fetch interviews", err.Error())
 		return
 	}
-
 	// Convert to DTOs
 	interviewDTOs := make([]InterviewResponseDTO, len(result.Interviews))
 	for i, interview := range result.Interviews {
 		interviewDTOs[i] = InterviewResponseDTO{
-			ID:             interview.ID,
-			CandidateName:  interview.CandidateName,
-			Questions:      interview.Questions,
-			InterviewType:  interview.Type, // Map Type to InterviewType
-			Language:       interview.Language,
-			JobDescription: interview.JobDescription, // Include job description
-			CreatedAt:      interview.CreatedAt,
+			ID:                interview.ID,
+			CandidateName:     interview.CandidateName,
+			Questions:         interview.Questions,
+			InterviewType:     interview.InterviewType,
+			InterviewLanguage: interview.InterviewLanguage,
+			JobDescription:    interview.JobDescription, // Include job description
+			CreatedAt:         interview.CreatedAt,
 		}
 	}
 
@@ -177,20 +175,23 @@ func GetInterviewHandler(w http.ResponseWriter, r *http.Request) {
 	if id == "" {
 		writeJSONError(w, ErrCodeBadRequest, ErrMsgMissingInterviewID)
 		return
-	} // Get interview from memory store
+	}
+
+	// Get interview from memory store
 	interview, err := data.GlobalStore.GetInterview(id)
 	if err != nil {
 		writeJSONError(w, http.StatusNotFound, "Interview not found")
 		return
 	}
+
 	resp := InterviewResponseDTO{
-		ID:             interview.ID,
-		CandidateName:  interview.CandidateName,
-		Questions:      interview.Questions,
-		InterviewType:  interview.Type, // Map Type to InterviewType
-		Language:       interview.Language,
-		JobDescription: interview.JobDescription, // Include job description
-		CreatedAt:      interview.CreatedAt,
+		ID:                interview.ID,
+		CandidateName:     interview.CandidateName,
+		Questions:         interview.Questions,
+		InterviewType:     interview.InterviewType,
+		InterviewLanguage: interview.InterviewLanguage,
+		JobDescription:    interview.JobDescription, // Include job description
+		CreatedAt:         interview.CreatedAt,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -226,13 +227,12 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 			answers[i] = "" // Empty answer if not provided
 		}
 	}
-
 	// Generate AI evaluation using the same method as chat evaluation
 	jobTitle := "Software Engineer" // Default job title
 	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
-	language := interview.Language // Use interview language for evaluation
+	interviewLanguage := interview.InterviewLanguage // Use interview language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobTitle, jobDesc, language)
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobTitle, jobDesc, interviewLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return
@@ -313,22 +313,22 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		// Ignore decode errors for optional body - use interview language as fallback
 		_ = json.NewDecoder(r.Body).Decode(&req)
 	}
-
 	// Determine language: use request language if provided, otherwise inherit from interview
-	sessionLanguage := interview.Language // Default to interview language
-	if req.InterviewLanguage != "" {
-		sessionLanguage = data.GetValidatedLanguage(req.InterviewLanguage)
+	sessionLanguage := interview.InterviewLanguage // Default to interview language
+	if req.SessionLanguage != "" {
+		sessionLanguage = data.GetValidatedLanguage(req.SessionLanguage)
 	}
 
 	// Create chat session
 	sessionID := data.GenerateID()
 	session := &data.ChatSession{
-		ID:          sessionID,
-		InterviewID: interviewID,
-		Language:    sessionLanguage,
-		Status:      "active",
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+		ID:              sessionID,
+		InterviewID:     interviewID,
+		SessionLanguage: sessionLanguage,
+		Status:          "active",
+		StartedAt:       time.Now(),
+		CreatedAt:       time.Now(),
+		UpdatedAt:       time.Now(),
 	}
 	err = data.GlobalStore.CreateChatSession(session)
 	if err != nil {
@@ -371,12 +371,13 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := ChatInterviewSessionDTO{
-		ID:          session.ID,
-		InterviewID: session.InterviewID,
-		Language:    session.Language,
-		Messages:    messageDTOs,
-		Status:      session.Status,
-		CreatedAt:   session.CreatedAt,
+		ID:              session.ID,
+		InterviewID:     session.InterviewID,
+		SessionLanguage: session.SessionLanguage,
+		Messages:        messageDTOs,
+		Status:          session.Status,
+		StartedAt:       session.StartedAt,
+		CreatedAt:       session.CreatedAt,
 	}
 
 	writeJSON(w, http.StatusCreated, response)
@@ -426,7 +427,9 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to save user message")
 		return
-	} // Get conversation history for AI context (excluding the current message)
+	}
+
+	// Get conversation history for AI context (excluding the current message)
 	messages, err := data.GlobalStore.GetChatMessages(sessionID)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to get chat history")
@@ -453,12 +456,14 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 				"content": msg.Content,
 			})
 		}
-	} // Generate AI response - use closing context if interview should end
+	}
+
+	// Generate AI response - use closing context if interview should end
 	var aiResponse string
 	if shouldEndInterview {
-		aiResponse, err = ai.Client.GenerateClosingMessageWithLanguage(sessionID, conversationHistory, req.Message, session.Language)
+		aiResponse, err = ai.Client.GenerateClosingMessageWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
 	} else {
-		aiResponse, err = ai.Client.GenerateChatResponseWithLanguage(sessionID, conversationHistory, req.Message, session.Language)
+		aiResponse, err = ai.Client.GenerateChatResponseWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
 	}
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
@@ -487,7 +492,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		endedAt := time.Now()
 		session.EndedAt = &endedAt
 		if err := data.GlobalStore.UpdateChatSession(session); err != nil {
-			log.Printf("Failed to update chat session: %v", err)
+			utils.Errorf("Failed to update chat session: %v", err)
 		}
 	}
 
@@ -545,14 +550,14 @@ func GetChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 			Timestamp: msg.Timestamp,
 		}
 	}
-
 	response := ChatInterviewSessionDTO{
-		ID:          session.ID,
-		InterviewID: session.InterviewID,
-		Language:    session.Language,
-		Messages:    messageDTOs,
-		Status:      session.Status,
-		CreatedAt:   session.CreatedAt,
+		ID:              session.ID,
+		InterviewID:     session.InterviewID,
+		SessionLanguage: session.SessionLanguage,
+		Messages:        messageDTOs,
+		Status:          session.Status,
+		StartedAt:       session.StartedAt,
+		CreatedAt:       session.CreatedAt,
 	}
 
 	writeJSON(w, http.StatusOK, response)
@@ -614,13 +619,12 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 			answers[fmt.Sprintf("question_%d", questionIndex)] = msg.Content
 		}
 	}
-
 	// Generate evaluation using AI service with interview context
 	jobTitle := "Software Engineer" // Default job title
 	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
-	language := session.Language // Use session language for evaluation
+	sessionLanguage := session.SessionLanguage // Use session language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobTitle, jobDesc, language)
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobTitle, jobDesc, sessionLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return

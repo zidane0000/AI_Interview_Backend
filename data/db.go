@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -43,7 +44,7 @@ func InitDB(databaseURL string) (*gorm.DB, error) {
 	// Add performance indexes for better concurrent query performance
 	if err := AddPerformanceIndexes(db); err != nil {
 		// Don't fail if indexes can't be created, just log warning
-		fmt.Printf("Warning: Some performance indexes could not be created: %v\n", err)
+		utils.Warningf("Some performance indexes could not be created: %v\n", err)
 	}
 
 	// Add database health check
@@ -90,7 +91,9 @@ func CloseDB(db *gorm.DB) {
 
 	dbConn, err := db.DB()
 	if err == nil {
-		dbConn.Close()
+		if closeErr := dbConn.Close(); closeErr != nil {
+			utils.WarningIf(closeErr)
+		}
 	}
 }
 

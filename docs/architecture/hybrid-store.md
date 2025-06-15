@@ -128,14 +128,14 @@ go test ./...
 // Auto-detects backend and initializes appropriate store
 err = data.InitGlobalStore()
 if err != nil {
-    log.Fatalf("failed to initialize store: %v", err)
+    utils.Errorf("failed to initialize store: %v", err)
 }
 
 // Check which backend is active
 if data.GlobalStore.GetBackend() == data.BackendDatabase {
-    fmt.Println("Using PostgreSQL database backend")
+    utils.Infof("Using PostgreSQL database backend")
 } else {
-    fmt.Println("Using in-memory store backend")
+    utils.Infof("Using in-memory store backend")
 }
 ```
 
@@ -194,7 +194,7 @@ func AddChatMessage(sessionID string, message *ChatMessage) error
 ```go
 // Check store health
 if err := data.GlobalStore.Health(); err != nil {
-    log.Printf("Store health check failed: %v", err)
+    utils.Errof("Store health check failed: %v", err)
 }
 ```
 

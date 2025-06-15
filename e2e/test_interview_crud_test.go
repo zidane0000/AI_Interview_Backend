@@ -54,8 +54,8 @@ func TestInterviewCRUD(t *testing.T) {
 		if interview.JobDescription != GetSampleJobDescription() {
 			t.Errorf("Job description not saved correctly")
 		}
-		if interview.Language != "en" {
-			t.Errorf("Expected language 'en', got '%s'", interview.Language)
+		if interview.InterviewLanguage != "en" {
+			t.Errorf("Expected language 'en', got '%s'", interview.InterviewLanguage)
 		}
 		if len(interview.Questions) != len(GetSampleTechnicalQuestions()) {
 			t.Errorf("Expected %d questions, got %d", len(GetSampleTechnicalQuestions()), len(interview.Questions))
@@ -95,7 +95,9 @@ func TestInterviewCRUD(t *testing.T) {
 
 				if tc.shouldHaveQuestions && len(interview.Questions) != len(tc.questions) {
 					t.Errorf("Expected %d questions, got %d", len(tc.questions), len(interview.Questions))
-				} // Verify default fields when optional ones are not provided
+				}
+
+				// Verify default fields when optional ones are not provided
 				if interview.JobDescription != "" {
 					t.Errorf("Expected empty job description, got '%s'", interview.JobDescription)
 				}

@@ -3,60 +3,11 @@ package ai
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
-
-// getEnvOrDefault returns environment variable value or default
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// getEnvAsIntOrDefault returns environment variable as int or default
-func getEnvAsIntOrDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intVal, err := strconv.Atoi(value); err == nil {
-			return intVal
-		}
-	}
-	return defaultValue
-}
-
-// getEnvAsFloatOrDefault returns environment variable as float64 or default
-func getEnvAsFloatOrDefault(key string, defaultValue float64) float64 {
-	if value := os.Getenv(key); value != "" {
-		if floatVal, err := strconv.ParseFloat(value, 64); err == nil {
-			return floatVal
-		}
-	}
-	return defaultValue
-}
-
-// getEnvAsBoolOrDefault returns environment variable as bool or default
-func getEnvAsBoolOrDefault(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolVal, err := strconv.ParseBool(value); err == nil {
-			return boolVal
-		}
-	}
-	return defaultValue
-}
-
-// getEnvAsDurationOrDefault returns environment variable as duration or default
-func getEnvAsDurationOrDefault(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if duration, err := time.ParseDuration(value); err == nil {
-			return duration
-		}
-	}
-	return defaultValue
-}
 
 // NewDefaultAIConfig creates a default AI configuration from environment variables
 // This function automatically loads .env files to ensure configuration is available
@@ -65,22 +16,22 @@ func NewDefaultAIConfig() *AIConfig {
 	_ = godotenv.Load()
 
 	return &AIConfig{
-		OpenAIAPIKey:     getEnvOrDefault("OPENAI_API_KEY", ""),
-		GeminiAPIKey:     getEnvOrDefault("GEMINI_API_KEY", ""),
-		DefaultProvider:  getEnvOrDefault("AI_DEFAULT_PROVIDER", ProviderMock),
-		DefaultModel:     getEnvOrDefault("AI_DEFAULT_MODEL", "mock-model"),
-		MaxRetries:       getEnvAsIntOrDefault("AI_MAX_RETRIES", 3),
-		RequestTimeout:   getEnvAsDurationOrDefault("AI_REQUEST_TIMEOUT", 60*time.Second),
-		DefaultMaxTokens: getEnvAsIntOrDefault("AI_DEFAULT_MAX_TOKENS", 1000),
-		DefaultTemp:      getEnvAsFloatOrDefault("AI_DEFAULT_TEMPERATURE", 0.7),
-		EnableCaching:    getEnvAsBoolOrDefault("AI_ENABLE_CACHING", true),
-		EnableMetrics:    getEnvAsBoolOrDefault("AI_ENABLE_METRICS", true),
-		EnableStreaming:  getEnvAsBoolOrDefault("AI_ENABLE_STREAMING", false),
-		RateLimitRPM:     getEnvAsIntOrDefault("AI_RATE_LIMIT_RPM", 60),
-		RateLimitTPM:     getEnvAsIntOrDefault("AI_RATE_LIMIT_TPM", 60000),
-		DailyTokenLimit:  getEnvAsIntOrDefault("AI_DAILY_TOKEN_LIMIT", 100000),
-		CostPerToken:     getEnvAsFloatOrDefault("AI_COST_PER_TOKEN", 0.000002),
-		MaxCostPerDay:    getEnvAsFloatOrDefault("AI_MAX_COST_PER_DAY", 10.0),
+		OpenAIAPIKey:     utils.GetEnvString("OPENAI_API_KEY", ""),
+		GeminiAPIKey:     utils.GetEnvString("GEMINI_API_KEY", ""),
+		DefaultProvider:  utils.GetEnvString("AI_DEFAULT_PROVIDER", ProviderMock),
+		DefaultModel:     utils.GetEnvString("AI_DEFAULT_MODEL", "mock-model"),
+		MaxRetries:       utils.GetEnvInt("AI_MAX_RETRIES", 3),
+		RequestTimeout:   utils.GetEnvDuration("AI_REQUEST_TIMEOUT", 60*time.Second),
+		DefaultMaxTokens: utils.GetEnvInt("AI_DEFAULT_MAX_TOKENS", 1000),
+		DefaultTemp:      utils.GetEnvFloat64("AI_DEFAULT_TEMPERATURE", 0.7),
+		EnableCaching:    utils.GetEnvBool("AI_ENABLE_CACHING", true),
+		EnableMetrics:    utils.GetEnvBool("AI_ENABLE_METRICS", true),
+		EnableStreaming:  utils.GetEnvBool("AI_ENABLE_STREAMING", false),
+		RateLimitRPM:     utils.GetEnvInt("AI_RATE_LIMIT_RPM", 60),
+		RateLimitTPM:     utils.GetEnvInt("AI_RATE_LIMIT_TPM", 60000),
+		DailyTokenLimit:  utils.GetEnvInt("AI_DAILY_TOKEN_LIMIT", 100000),
+		CostPerToken:     utils.GetEnvFloat64("AI_COST_PER_TOKEN", 0.000002),
+		MaxCostPerDay:    utils.GetEnvFloat64("AI_MAX_COST_PER_DAY", 10.0),
 	}
 }
 

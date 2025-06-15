@@ -2,8 +2,9 @@
 package api
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -69,7 +70,7 @@ func SetupRouter() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write([]byte(`{"status":"ok","service":"ai_interview_backend"}`)); err != nil {
-			log.Printf("Failed to write health check response: %v", err)
+			utils.Errorf("Failed to write health check response: %v", err)
 		}
 	})
 

@@ -10,19 +10,19 @@ import (
 
 // EvaluationFilters defines filter options for evaluation queries
 type EvaluationFilters struct {
-	InterviewID string
-	MinScore    float64
-	MaxScore    float64
-	CreatedAfter time.Time
+	InterviewID   string
+	MinScore      float64
+	MaxScore      float64
+	CreatedAfter  time.Time
 	CreatedBefore time.Time
 }
 
 // EvaluationStatistics provides aggregated statistics for evaluations
 type EvaluationStatistics struct {
-	TotalEvaluations int64   `json:"total_evaluations"`
-	AverageScore     float64 `json:"average_score"`
-	MinScore         float64 `json:"min_score"`
-	MaxScore         float64 `json:"max_score"`
+	TotalEvaluations  int64          `json:"total_evaluations"`
+	AverageScore      float64        `json:"average_score"`
+	MinScore          float64        `json:"min_score"`
+	MaxScore          float64        `json:"max_score"`
 	ScoreDistribution map[string]int `json:"score_distribution"` // Score ranges
 }
 
@@ -144,11 +144,11 @@ func (r *evaluationRepository) GetStatistics() (*EvaluationStatistics, error) {
 		Min float64
 		Max float64
 	}
-	
+
 	err := r.db.Model(&Evaluation{}).
 		Select("AVG(score) as avg, MIN(score) as min, MAX(score) as max").
 		Scan(&result).Error
-	
+
 	if err != nil {
 		return nil, err
 	}
@@ -159,12 +159,12 @@ func (r *evaluationRepository) GetStatistics() (*EvaluationStatistics, error) {
 
 	// Score distribution (simplified ranges)
 	stats.ScoreDistribution = make(map[string]int)
-	
+
 	var distributions []struct {
 		Range string
 		Count int
 	}
-	
+
 	err = r.db.Model(&Evaluation{}).
 		Select(`
 			CASE 
@@ -178,7 +178,7 @@ func (r *evaluationRepository) GetStatistics() (*EvaluationStatistics, error) {
 		`).
 		Group("range").
 		Scan(&distributions).Error
-	
+
 	if err != nil {
 		return nil, err
 	}

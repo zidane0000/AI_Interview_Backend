@@ -2,9 +2,10 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
 // LoggingMiddleware logs the HTTP method, path, status, and duration for each request.
@@ -14,7 +15,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(lrw, r)
 		duration := time.Since(start)
-		log.Printf("%s %s %d %s", r.Method, r.URL.Path, lrw.statusCode, duration)
+		utils.Infof("%s %s %d %s", r.Method, r.URL.Path, lrw.statusCode, duration)
 	})
 }
 

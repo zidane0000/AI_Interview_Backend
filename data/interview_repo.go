@@ -60,7 +60,6 @@ func (r *interviewRepository) List(limit, offset int, filters InterviewFilters) 
 	var total int64
 
 	query := r.db.Model(&Interview{})
-
 	// Apply filters
 	if filters.CandidateName != "" {
 		query = query.Where("candidate_name ILIKE ?", "%"+filters.CandidateName+"%")

@@ -13,6 +13,7 @@
 - ✅ Backend handlers process interview_type and job_description fields
 - ✅ Validation for required interview_type field (returns 400 for invalid/missing)
 - ✅ Clean logging (operational logs only, no test noise without -v)
+- ✅ Enhanced test coverage
 
 ## � **TODO - IMMEDIATE**
 
@@ -40,3 +41,20 @@
 - ❌ Implement AI interview evaluation system (scoring, feedback generation)  
 - ❌ Add streaming support for real-time AI responses (OpenAI & Gemini)
 - ❌ AI provider usage statistics and monitoring
+
+## 🧪 **TODO - TEST COVERAGE & QUALITY**
+
+- ❌ **AI Package Tests**: Add unit tests for AI provider integrations (OpenAI, Gemini, Mock)
+- ❌ **SQL Integration Tests**: Fix and improve repository tests with proper SQL mocking
+- ❌ **Performance Tests**: Load testing for memory/hybrid store operations
+- ❌ **Error Scenario Tests**: More edge cases and error handling coverage
+- ❌ **Database Migration Tests**: Test schema changes and data migrations
+- ❌ **Concurrent Access Tests**: Multi-user scenario testing
+
+## 🔄 **TODO - TECHNICAL DEBT**
+
+- ❌ **Repository Test Mocking**: Fix SQL mock tests to work with GORM's query generation
+- ❌ **Database Schema Migrations**: Add proper migration scripts for field name changes
+- ❌ **API Documentation**: Update OpenAPI specs to reflect new field names
+- ❌ **Code Documentation**: Add comprehensive code comments and examples
+- ❌ **Dependency Updates**: Regular security and feature updates

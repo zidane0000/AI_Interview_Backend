@@ -23,12 +23,12 @@ type CreateInterviewRequestDTO struct {
 }
 
 type InterviewResponseDTO struct {
-	ID             string   `json:"id"`
-	CandidateName  string   `json:"candidate_name"`
-	Questions      []string `json:"questions"`
-	InterviewType  string   `json:"interview_type"`            // "general", "technical", or "behavioral"
-	Language       string   `json:"language"`                  // Language preference: "en" or "zh-TW"
-	JobDescription string   `json:"job_description,omitempty"` // Optional: Job description text
+	ID                string   `json:"id"`
+	CandidateName     string   `json:"candidate_name"`
+	Questions         []string `json:"questions"`
+	InterviewType     string   `json:"interview_type"`            // "general", "technical", or "behavioral"
+	InterviewLanguage string   `json:"interview_language"`        // Language preference: "en" or "zh-TW"
+	JobDescription    string   `json:"job_description,omitempty"` // Optional: Job description text
 	// TODO: Resume file support will be added in future iteration
 	CreatedAt time.Time `json:"created_at"`
 }
@@ -58,7 +58,7 @@ type EvaluationResponseDTO struct {
 // TODO: Implement chat-based interview DTOs to support conversational interviews
 
 type StartChatSessionRequestDTO struct {
-	InterviewLanguage string `json:"interview_language,omitempty"` // Optional language override
+	SessionLanguage string `json:"session_language,omitempty"` // Optional language override
 }
 
 type ChatMessageDTO struct {
@@ -69,12 +69,13 @@ type ChatMessageDTO struct {
 }
 
 type ChatInterviewSessionDTO struct {
-	ID          string           `json:"id"`
-	InterviewID string           `json:"interview_id"`
-	Language    string           `json:"language"` // Session language: "en" or "zh-TW"
-	Messages    []ChatMessageDTO `json:"messages"`
-	Status      string           `json:"status"` // "active" or "completed"
-	CreatedAt   time.Time        `json:"created_at"`
+	ID              string           `json:"id"`
+	InterviewID     string           `json:"interview_id"`
+	SessionLanguage string           `json:"session_language"` // Session language: "en" or "zh-TW"
+	Messages        []ChatMessageDTO `json:"messages"`
+	Status          string           `json:"status"` // "active" or "completed"
+	StartedAt       time.Time        `json:"started_at"`
+	CreatedAt       time.Time        `json:"created_at"`
 }
 
 type SendMessageRequestDTO struct {

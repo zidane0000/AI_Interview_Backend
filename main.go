@@ -4,8 +4,6 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +14,7 @@ import (
 	"github.com/zidane0000/AI_Interview_Backend/api"
 	"github.com/zidane0000/AI_Interview_Backend/config"
 	"github.com/zidane0000/AI_Interview_Backend/data"
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
 // gracefulShutdown handles graceful shutdown of the application
@@ -25,40 +24,39 @@ func gracefulShutdown(server *http.Server, timeout time.Duration) {
 
 	// Register the channel to receive specific signals
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-
 	// Block until we receive a signal
 	sig := <-quit
-	log.Printf("Received signal: %v. Starting graceful shutdown...", sig)
+	utils.Errorf("Received signal: %v. Starting graceful shutdown...", sig)
 
 	// Create a deadline to wait for shutdown
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-
 	// Attempt to gracefully shutdown the server
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		utils.Errorf("Server forced to shutdown: %v", err)
 		os.Exit(1) // Exit with error code 1
 	}
 
 	// Additional cleanup operations
-	log.Println("Performing cleanup operations...")
+	utils.Infof("Performing cleanup operations...")
 	// Close database connections if available
 	if data.GlobalStore != nil {
 		if err := data.GlobalStore.Close(); err != nil {
-			log.Printf("Error closing database connections: %v", err)
+			utils.Errorf("Error closing database connections: %v", err)
 			os.Exit(2) // Exit with error code 2 for database cleanup failure
 		}
 	}
 
-	log.Println("Graceful shutdown completed successfully")
+	utils.Infof("Graceful shutdown completed successfully")
 }
 
 func main() {
 	// Load configuration
-	fmt.Println("Loading configuration...")
+	utils.Infof("Loading configuration...")
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		utils.Errorf("failed to load config: %v", err)
+		os.Exit(1)
 	}
 
 	// TODO: Initialize logging with proper configuration
@@ -66,37 +64,38 @@ func main() {
 	// TODO: Add log rotation and file output options
 
 	// Initialize hybrid store (auto-detects memory vs database backend)
-	fmt.Println("Initializing data store...")
+	utils.Infof("Initializing data store...")
 	err = data.InitGlobalStore()
 	if err != nil {
-		log.Fatalf("failed to initialize store: %v", err)
+		utils.Errorf("failed to initialize store: %v", err)
+		os.Exit(1)
 	}
 
 	// Log the backend being used
 	if data.GlobalStore.GetBackend() == data.BackendDatabase {
-		fmt.Println("Using PostgreSQL database backend")
+		utils.Infof("Using PostgreSQL database backend")
 	} else {
-		fmt.Println("Using in-memory store backend (set DATABASE_URL for database mode)")
+		utils.Infof("Using in-memory store backend (set DATABASE_URL for database mode)")
 	}
 	// TODO: Add store health checks
 	// if err := data.GlobalStore.Health(); err != nil {
-	//     log.Fatalf("store health check failed: %v", err)
+	//     utils.Errorf("store health check failed: %v", err)
 	// }
 	// Initialize AI service client (global client is already initialized with .env support)
-	fmt.Println("AI client initialized with .env configuration")
+	utils.Infof("AI client initialized with .env configuration")
 
 	// Log AI provider information for operational visibility
 	if ai.Client != nil {
-		fmt.Printf("Using AI provider: %s with model: %s\n", ai.Client.GetCurrentProvider(), ai.Client.GetCurrentModel())
+		utils.Infof("Using AI provider: %s with model: %s", ai.Client.GetCurrentProvider(), ai.Client.GetCurrentModel())
 	}
 
 	// TODO: Add AI service validation
 	// if err := ai.Client.TestConnection(); err != nil {
-	//     log.Fatalf("failed to connect to AI service: %v", err)
+	//     utils.Errorf("failed to connect to AI service: %v", err)
 	// }
 	// TODO: Initialize file upload directory and permissions
 	// if err := os.MkdirAll(cfg.UploadPath, 0755); err != nil {
-	//     log.Fatalf("failed to create upload directory: %v", err)
+	//     utils.Errorf("failed to create upload directory: %v", err)
 	// }
 	// Set up router
 	router := api.SetupRouter()
@@ -104,22 +103,24 @@ func main() {
 	// TODO: Add health check endpoints
 	// TODO: Add metrics and monitoring endpoints
 	// TODO: Add API documentation serving (Swagger/OpenAPI)
-
-	// Create HTTP server
+	// Create HTTP server with security timeouts
 	server := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: router,
+		Addr:              ":" + cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
-
 	// Start server in a goroutine
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			utils.Errorf("Server failed to start: %v", err)
+			os.Exit(1)
 		}
 	}()
-
-	fmt.Printf("Server successfully started on port %s\n", cfg.Port)
-	fmt.Printf("Frontend can now connect to: http://localhost:%s\n", cfg.Port)
+	utils.Infof("Server successfully started on port %s", cfg.Port)
+	utils.Infof("Frontend can now connect to: http://localhost:%s", cfg.Port)
 
 	// Start graceful shutdown handler (this will block until shutdown signal)
 	gracefulShutdown(server, cfg.ShutdownTimeout)
