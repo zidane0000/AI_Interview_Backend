@@ -94,11 +94,11 @@ func (c *AIClient) ShouldEndInterview(messageCount int) bool {
 // EvaluateAnswers evaluates chat conversation and generates score and feedback
 func (c *AIClient) EvaluateAnswers(questions []string, answers []string, language string) (float64, string, error) {
 	// Use the context version with default job info
-	return c.EvaluateAnswersWithContext(questions, answers, "Software Engineer", "General interview evaluation", language)
+	return c.EvaluateAnswersWithContext(questions, answers, "General interview evaluation", language)
 }
 
 // EvaluateAnswersWithContext evaluates chat conversation with interview context
-func (c *AIClient) EvaluateAnswersWithContext(questions []string, answers []string, jobTitle, jobDesc, language string) (float64, string, error) {
+func (c *AIClient) EvaluateAnswersWithContext(questions []string, answers []string, jobDesc, language string) (float64, string, error) {
 	if len(answers) == 0 {
 		return 0.0, "No answers provided.", nil
 	}
@@ -110,7 +110,6 @@ func (c *AIClient) EvaluateAnswersWithContext(questions []string, answers []stri
 	req := &EvaluationRequest{
 		Questions:   questions,
 		Answers:     answers,
-		JobTitle:    jobTitle,
 		JobDesc:     jobDesc,
 		Criteria:    []string{"communication", "technical_knowledge", "problem_solving", "clarity", "cultural_fit"},
 		DetailLevel: "detailed",
@@ -132,11 +131,10 @@ func (c *AIClient) EvaluateAnswersWithContext(questions []string, answers []stri
 }
 
 // GenerateQuestionsFromResume generates interview questions based on resume and job description
-func (c *AIClient) GenerateQuestionsFromResume(resumeText, jobDescription, jobTitle string) ([]InterviewQuestion, error) {
+func (c *AIClient) GenerateQuestionsFromResume(resumeText, jobDescription string) ([]InterviewQuestion, error) {
 	ctx := context.Background()
 
 	req := &QuestionGenerationRequest{
-		JobTitle:        jobTitle,
 		JobDescription:  jobDescription,
 		ResumeContent:   resumeText,
 		InterviewType:   "mixed",
@@ -154,11 +152,10 @@ func (c *AIClient) GenerateQuestionsFromResume(resumeText, jobDescription, jobTi
 }
 
 // GenerateInterviewQuestions generates questions for a specific interview setup
-func (c *AIClient) GenerateInterviewQuestions(jobTitle, jobDesc string, questionCount int) ([]InterviewQuestion, error) {
+func (c *AIClient) GenerateInterviewQuestions(jobDesc string, questionCount int) ([]InterviewQuestion, error) {
 	ctx := context.Background()
 
 	req := &QuestionGenerationRequest{
-		JobTitle:        jobTitle,
 		JobDescription:  jobDesc,
 		InterviewType:   "general",
 		NumQuestions:    questionCount,

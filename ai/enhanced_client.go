@@ -279,7 +279,7 @@ func (c *EnhancedAIClient) EvaluateAnswers(ctx context.Context, req *EvaluationR
 
 // buildInterviewSystemPrompt creates a system prompt for interview context
 func (c *EnhancedAIClient) buildInterviewSystemPrompt(context map[string]interface{}) string {
-	jobTitle := getStringFromContext(context, "job_title", "Software Engineer")
+	jobDescription := getStringFromContext(context, "job_description", "")
 	interviewType := getStringFromContext(context, "interview_type", "general")
 	language := getStringFromContext(context, "language", "en")
 
@@ -299,7 +299,17 @@ func (c *EnhancedAIClient) buildInterviewSystemPrompt(context map[string]interfa
 		languageInstructions = "IMPORTANT: You must respond ONLY in English."
 	}
 
-	basePrompt := fmt.Sprintf(`%sYou are an experienced interviewer conducting a %s interview for a %s position.
+	// Build job context from description
+	var jobContext string
+	if jobDescription != "" {
+		jobContext = fmt.Sprintf("Job Description: %s", jobDescription)
+	} else {
+		jobContext = "This is a general interview assessment"
+	}
+
+	basePrompt := fmt.Sprintf(`%sYou are an experienced interviewer conducting a %s interview.
+
+%s
 
 Your role:
 - Ask thoughtful, relevant questions that assess the candidate's skills and experience
@@ -317,7 +327,7 @@ Guidelines:
 
 Remember: You are evaluating the candidate's technical skills, problem-solving ability, and cultural fit.
 
-%s`, languageInstructions, interviewType, jobTitle, languageInstructions)
+%s`, languageInstructions, interviewType, jobContext, languageInstructions)
 
 	return basePrompt
 }

@@ -228,11 +228,13 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Generate AI evaluation using the same method as chat evaluation
-	jobTitle := "Software Engineer" // Default job title
-	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
+	jobDesc := interview.JobDescription
+	if jobDesc == "" {
+		jobDesc = fmt.Sprintf("General %s interview", interview.InterviewType)
+	}
 	interviewLanguage := interview.InterviewLanguage // Use interview language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobTitle, jobDesc, interviewLanguage)
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobDesc, interviewLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return
@@ -620,11 +622,13 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Generate evaluation using AI service with interview context
-	jobTitle := "Software Engineer" // Default job title
-	jobDesc := fmt.Sprintf("Interview for %s position", interview.CandidateName)
+	jobDesc := interview.JobDescription
+	if jobDesc == "" {
+		jobDesc = fmt.Sprintf("General %s interview", interview.InterviewType)
+	}
 	sessionLanguage := session.SessionLanguage // Use session language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobTitle, jobDesc, sessionLanguage)
+	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobDesc, sessionLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return

@@ -181,7 +181,7 @@ func (p *GeminiProvider) GenerateInterviewQuestions(ctx context.Context, req *Qu
 		Messages: []Message{
 			{
 				Role:    "user",
-				Content: systemPrompt + fmt.Sprintf("\n\nGenerate %d interview questions for the %s position.", req.NumQuestions, req.JobTitle),
+				Content: systemPrompt + fmt.Sprintf("\n\nGenerate %d interview questions based on this job description: %s", req.NumQuestions, req.JobDescription),
 			},
 		},
 		Model:       p.getModelName(""),
@@ -388,7 +388,6 @@ func (p *GeminiProvider) makeRequest(ctx context.Context, endpoint string, paylo
 func (p *GeminiProvider) buildQuestionGenerationPrompt(req *QuestionGenerationRequest) string {
 	return fmt.Sprintf(`You are an expert interviewer tasked with generating high-quality interview questions.
 
-Job Title: %s
 Experience Level: %s
 Interview Type: %s
 Difficulty: %s
@@ -400,7 +399,7 @@ Candidate Resume:
 %s
 
 Generate %d relevant interview questions that:
-1. Assess the candidate's technical skills and experience
+1. Assess the candidate's skills and experience based on the job description
 2. Are appropriate for the %s level
 3. Focus on %s aspects
 4. Match the difficulty level: %s
@@ -411,8 +410,8 @@ Category: [technical/behavioral/situational]
 Difficulty: [easy/medium/hard]
 Expected Time: [minutes]
 
-Provide diverse questions that thoroughly evaluate the candidate.`,
-		req.JobTitle, req.ExperienceLevel, req.InterviewType, req.Difficulty,
+Provide diverse questions that thoroughly evaluate the candidate for this role.`,
+		req.ExperienceLevel, req.InterviewType, req.Difficulty,
 		req.JobDescription, req.ResumeContent, req.NumQuestions,
 		req.ExperienceLevel, req.InterviewType, req.Difficulty)
 }
@@ -422,7 +421,6 @@ func (p *GeminiProvider) buildEvaluationPrompt(req *EvaluationRequest) string {
 
 	return fmt.Sprintf(`You are an expert interview evaluator. Evaluate the candidate's answers objectively and provide detailed feedback.
 
-Job Title: %s
 Job Description: %s
 Evaluation Criteria: %s
 Detail Level: %s
@@ -450,7 +448,7 @@ Recommendations:
 - [specific recommendation 2]
 
 Be specific, constructive, and fair in your evaluation.`,
-		req.JobTitle, req.JobDesc, criteriaText, req.DetailLevel)
+		req.JobDesc, criteriaText, req.DetailLevel)
 }
 
 func (p *GeminiProvider) formatAnswersForEvaluation(questions, answers []string) string {

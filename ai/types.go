@@ -57,8 +57,7 @@ type TokenUsage struct {
 type EvaluationRequest struct {
 	Questions   []string               `json:"questions"`    // Interview questions
 	Answers     []string               `json:"answers"`      // Candidate answers
-	JobTitle    string                 `json:"job_title"`    // Position being interviewed for
-	JobDesc     string                 `json:"job_desc"`     // Job description
+	JobDesc     string                 `json:"job_desc"`     // Job description (AI will extract job title from this)
 	Criteria    []string               `json:"criteria"`     // Evaluation criteria
 	Context     map[string]interface{} `json:"context"`      // Additional context
 	DetailLevel string                 `json:"detail_level"` // "brief", "detailed", "comprehensive"
@@ -81,8 +80,7 @@ type EvaluationResponse struct {
 
 // QuestionGenerationRequest represents a request to generate interview questions
 type QuestionGenerationRequest struct {
-	JobTitle        string                 `json:"job_title"`        // Position title
-	JobDescription  string                 `json:"job_description"`  // Job requirements
+	JobDescription  string                 `json:"job_description"`  // Job requirements (AI will extract job title from this)
 	ResumeContent   string                 `json:"resume_content"`   // Candidate's resume
 	ExperienceLevel string                 `json:"experience_level"` // "junior", "mid", "senior"
 	InterviewType   string                 `json:"interview_type"`   // "technical", "behavioral", "mixed"
@@ -176,8 +174,7 @@ type AIConfig struct {
 
 // InterviewContext contains context for interview-related AI operations
 type InterviewContext struct {
-	JobTitle        string            `json:"job_title"`
-	JobDescription  string            `json:"job_description"`
+	JobDescription  string            `json:"job_description"` // Job description (AI will extract job title from this)
 	CandidateName   string            `json:"candidate_name"`
 	InterviewType   string            `json:"interview_type"`
 	ExperienceLevel string            `json:"experience_level"`
