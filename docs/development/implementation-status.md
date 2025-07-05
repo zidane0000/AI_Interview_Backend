@@ -37,9 +37,21 @@
 
 ## 🏗️ **TODO - ARCHITECTURE & CODE QUALITY**
 
+### **LiteLLM-Inspired AI Provider Enhancements**
+
+- ❌ **Provider/Model Format**: Implement "provider/model" naming convention (e.g., "openai/gpt-4o", "google/gemini-pro")
+- ❌ **Adapter Pattern**: Implement provider-specific adapters for request/response transformation
+- ❌ **Factory Pattern**: Dynamic provider instantiation based on model prefix parsing
+- ❌ **Strategy Pattern**: Pluggable routing strategies (failover, load balancing, cost optimization)
+- ❌ **Universal Response Format**: Standardize all provider responses to consistent OpenAI-compatible structure
+- ❌ **Streaming Support**: Add real-time streaming responses for chat endpoints
+- ❌ **Simple Cost Tracking**: Static cost database with basic usage logging per model
+- ❌ **Environment-Based Configuration**: Clean env var pattern for provider API keys and settings
+
+### **Existing Architecture Tasks**
+
 - ❌ Refactor global AI client to use dependency injection for better testability
 - ❌ Implement AI interview evaluation system (scoring, feedback generation)  
-- ❌ Add streaming support for real-time AI responses (OpenAI & Gemini)
 - ❌ AI provider usage statistics and monitoring
 
 ## 🧪 **TODO - TEST COVERAGE & QUALITY**
@@ -55,6 +67,6 @@
 
 - ❌ **Repository Test Mocking**: Fix SQL mock tests to work with GORM's query generation
 - ❌ **Database Schema Migrations**: Add proper migration scripts for field name changes
-- ❌ **API Documentation**: Update OpenAPI specs to reflect new field names
+- ❌ **API Documentation**: Update OpenAPI specs to reflect new field names and provider/model format
 - ❌ **Code Documentation**: Add comprehensive code comments and examples
 - ❌ **Dependency Updates**: Regular security and feature updates
