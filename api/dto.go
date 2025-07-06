@@ -80,6 +80,7 @@ type ChatInterviewSessionDTO struct {
 
 type SendMessageRequestDTO struct {
 	Message string `json:"message"`
+	Model   string `json:"model,omitempty"` // Optional: "openai/gpt-4o", "google/gemini-pro", defaults to configured provider
 }
 
 type SendMessageResponseDTO struct {

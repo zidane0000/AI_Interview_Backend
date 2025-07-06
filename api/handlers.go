@@ -404,6 +404,13 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, "Message cannot be empty")
 		return
 	}
+
+	// Log model specification for future provider/model format implementation
+	if req.Model != "" {
+		utils.Infof("Model specified: %s (using default provider for now)", req.Model)
+		// TODO: Integrate ai.CreateProvider(req.Model, config) when multiple providers needed
+	}
+
 	// Validate chat session exists and is active
 	session, err := data.GlobalStore.GetChatSession(sessionID)
 	if err != nil {
