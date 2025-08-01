@@ -6,45 +6,10 @@ import (
 	"fmt"
 )
 
-// Legacy AIClient for backward compatibility
+// AIClient provides a high-level interface for AI operations
+// All instances should be created through the AIClientFactory
 type AIClient struct {
 	enhancedClient *EnhancedAIClient
-}
-
-// Global AI client instance (automatically loads .env configuration)
-// TODO: ARCHITECTURAL CONCERN - Global client design issues:
-// - Testing difficulties: Hard to mock or inject test doubles
-// - Tight coupling: All code tightly coupled to single global instance
-// - Configuration inflexibility: Can't have different configs for different use cases
-// - Concurrency concerns: Global state can lead to race conditions
-// - Initialization order dependencies: Must be initialized before use
-//
-// FUTURE REFACTORING PLAN:
-// 1. Introduce dependency injection in handlers
-// 2. Make the global client optional/deprecated
-// 3. Improve testability with proper mocking
-// 4. Consider service container or context-based injection
-//
-// For now keeping global client to focus on fixing failing tests first.
-var Client = NewAutoAIClient()
-
-// NewAutoAIClient initializes the AI client using the best available API key (OpenAI > Gemini > none)
-// This method automatically loads .env files and reads environment variables
-func NewAutoAIClient() *AIClient {
-	config := NewDefaultAIConfig() // loads from env
-
-	// Priority: OpenAI > Gemini > fallback
-	if config.OpenAIAPIKey != "" {
-		config.DefaultProvider = ProviderOpenAI
-		config.DefaultModel = "gpt-4o"
-	} else if config.GeminiAPIKey != "" {
-		config.DefaultProvider = ProviderGemini
-		config.DefaultModel = "gemini-2.0-flash"
-	}
-
-	return &AIClient{
-		enhancedClient: NewEnhancedAIClient(config),
-	}
 }
 
 // GenerateChatResponse generates AI response for conversational interviews

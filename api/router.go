@@ -4,13 +4,21 @@ package api
 import (
 	"net/http"
 
-	"github.com/zidane0000/AI_Interview_Backend/utils"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/zidane0000/AI_Interview_Backend/ai"
+	"github.com/zidane0000/AI_Interview_Backend/config"
+	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
 // SetupRouter initializes the HTTP routes for the API using chi
-func SetupRouter() http.Handler {
+// Config is injected from main.go to avoid loading configuration multiple times
+func SetupRouter(cfg *config.Config) http.Handler {
+	// Create AI client factory with injected config
+	aiClientFactory := ai.NewAIClientFactory(*cfg)
+
+	// Create handler dependencies
+	deps := NewHandlerDependencies(aiClientFactory)
+
 	r := chi.NewRouter()
 
 	r.Use(CORSMiddleware)
@@ -43,14 +51,14 @@ func SetupRouter() http.Handler {
 
 		// TODO: Implement chat session routes for conversational interviews
 		// These routes are expected by the frontend for chat-based interviews
-		r.Post("/{id}/chat/start", StartChatSessionHandler)
+		r.Post("/{id}/chat/start", deps.StartChatSessionHandler)
 		// TODO: Add PUT /{id} for updating interviews
 		// TODO: Add DELETE /{id} for removing interviews
 	})
 
 	// Evaluation routes
 	r.Route("/evaluation", func(r chi.Router) {
-		r.Post("/", SubmitEvaluationHandler)
+		r.Post("/", deps.SubmitEvaluationHandler)
 		r.Get("/{id}", GetEvaluationHandler)
 		// TODO: Add GET / for listing evaluations
 		// TODO: Add PUT /{id} for updating evaluations
@@ -59,9 +67,9 @@ func SetupRouter() http.Handler {
 	// TODO: Implement chat routes for real-time interview conversations
 	// These routes are required by the frontend chat functionality
 	r.Route("/chat", func(r chi.Router) {
-		r.Post("/{sessionId}/message", SendMessageHandler)
+		r.Post("/{sessionId}/message", deps.SendMessageHandler)
 		r.Get("/{sessionId}", GetChatSessionHandler)
-		r.Post("/{sessionId}/end", EndChatSessionHandler)
+		r.Post("/{sessionId}/end", deps.EndChatSessionHandler)
 		// TODO: Add WebSocket support for real-time messaging
 		// TODO: Add DELETE /{sessionId} for cleaning up sessions
 	})

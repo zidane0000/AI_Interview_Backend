@@ -10,10 +10,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/zidane0000/AI_Interview_Backend/config"
 	"github.com/zidane0000/AI_Interview_Backend/data"
 )
 
 // Test utilities and helpers
+
+// setupTestRouter creates a test router with mock configuration
+func setupTestRouter() http.Handler {
+	testConfig := &config.Config{
+		Port:            "8080",
+		OpenAIAPIKey:    "test-openai-key",
+		GeminiAPIKey:    "test-gemini-key",
+		ShutdownTimeout: 30 * time.Second,
+	}
+	return SetupRouter(testConfig)
+}
 
 // clearMemoryStore clears all data from the memory store for test isolation
 func clearMemoryStore() {
@@ -149,7 +161,7 @@ func TestCreateInterviewHandler_Success(t *testing.T) {
 }
 
 func TestCreateInterviewHandler_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Invalid JSON
 	expectHTTPError(t, router, "POST", "/interviews", []byte("{"), http.StatusBadRequest)
@@ -162,7 +174,7 @@ func TestCreateInterviewHandler_BadRequest(t *testing.T) {
 
 func TestCreateInterviewHandler_EdgeCases(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	tests := []struct {
 		name           string
@@ -215,7 +227,7 @@ func TestCreateInterviewHandler_EdgeCases(t *testing.T) {
 
 func TestListInterviewsHandler_Empty(t *testing.T) {
 	clearMemoryStore() // Clear store for test isolation
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/interviews", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -238,7 +250,7 @@ func TestListInterviewsHandler_Empty(t *testing.T) {
 
 func TestListInterviewsHandler_WithData(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create multiple test interviews using helper
 	interviews := []CreateInterviewRequestDTO{
@@ -275,7 +287,7 @@ func TestListInterviewsHandler_WithData(t *testing.T) {
 
 func TestListInterviewsHandler_Pagination(t *testing.T) {
 	clearMemoryStore() // Clear store for test isolation
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create 5 test interviews
 	for i := 1; i <= 5; i++ {
@@ -335,7 +347,7 @@ func TestListInterviewsHandler_Pagination(t *testing.T) {
 
 func TestListInterviewsHandler_Filtering(t *testing.T) {
 	clearMemoryStore() // Clear store for test isolation
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create test interviews with different names
 	interviews := []CreateInterviewRequestDTO{
@@ -384,7 +396,7 @@ func TestListInterviewsHandler_Filtering(t *testing.T) {
 
 func TestListInterviewsHandler_Sorting(t *testing.T) {
 	clearMemoryStore() // Clear store for test isolation
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create test interviews in a specific order
 	interviews := []CreateInterviewRequestDTO{
@@ -432,7 +444,7 @@ func TestListInterviewsHandler_Sorting(t *testing.T) {
 }
 
 func TestGetInterviewHandler_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/interviews/", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -443,7 +455,7 @@ func TestGetInterviewHandler_BadRequest(t *testing.T) {
 
 func TestGetInterviewHandler_Success(t *testing.T) {
 	clearMemoryStore() // Clear store for test isolation
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Step 1: Create an interview
 	createBody := CreateInterviewRequestDTO{
@@ -491,7 +503,7 @@ func TestSubmitEvaluationHandler_Success(t *testing.T) {
 	}
 	b, _ := json.Marshal(body)
 
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("POST", "/evaluation", bytes.NewReader(b))
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -501,7 +513,7 @@ func TestSubmitEvaluationHandler_Success(t *testing.T) {
 }
 
 func TestSubmitEvaluationHandler_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Invalid JSON
 	req := httptest.NewRequest("POST", "/evaluation", bytes.NewReader([]byte("{")))
@@ -523,7 +535,7 @@ func TestSubmitEvaluationHandler_BadRequest(t *testing.T) {
 }
 
 func TestGetEvaluationHandler_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/evaluation/", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -547,7 +559,7 @@ func TestGetEvaluationHandler_Success(t *testing.T) {
 		t.Fatalf("failed to create evaluation: %v", err)
 	}
 
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/evaluation/test-evaluation-456", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -562,7 +574,7 @@ func TestGetEvaluationHandler_Success(t *testing.T) {
 
 func TestStartChatSessionHandler_Success(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create interview using helper
 	interview := createTestInterview(t, router, CreateInterviewRequestDTO{
@@ -591,7 +603,7 @@ func TestStartChatSessionHandler_Success(t *testing.T) {
 
 func TestStartChatSessionHandler_WithLanguage(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	// Create interview with specific language
 	interview := createTestInterview(t, router, CreateInterviewRequestDTO{
@@ -613,21 +625,21 @@ func TestStartChatSessionHandler_WithLanguage(t *testing.T) {
 
 func TestStartChatSessionHandler_InvalidInterview(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	expectHTTPError(t, router, "POST", "/interviews/nonexistent/chat/start", nil, http.StatusNotFound)
 }
 
 func TestStartChatSessionHandler_MissingInterviewID(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	expectHTTPError(t, router, "POST", "/interviews//chat/start", nil, http.StatusBadRequest)
 }
 
 func TestSendMessageHandler_Success(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	interview := createTestInterviewAndSession(t, router)
 
@@ -645,7 +657,7 @@ func TestSendMessageHandler_Success(t *testing.T) {
 
 func TestSendMessageHandler_EmptyMessage(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	interview := createTestInterviewAndSession(t, router)
 
@@ -656,7 +668,7 @@ func TestSendMessageHandler_EmptyMessage(t *testing.T) {
 
 func TestSendMessageHandler_InvalidSession(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	req := SendMessageRequestDTO{Message: "Hello"}
 	b, _ := json.Marshal(req)
@@ -665,7 +677,7 @@ func TestSendMessageHandler_InvalidSession(t *testing.T) {
 
 func TestSendMessageHandler_InvalidJSON(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	interview := createTestInterviewAndSession(t, router)
 	expectHTTPError(t, router, "POST", "/chat/"+interview.SessionID+"/message", []byte("{"), http.StatusBadRequest)
@@ -673,7 +685,7 @@ func TestSendMessageHandler_InvalidJSON(t *testing.T) {
 
 func TestGetChatSessionHandler_Success(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	interview := createTestInterviewAndSession(t, router)
 
@@ -698,7 +710,7 @@ func TestGetChatSessionHandler_Success(t *testing.T) {
 
 func TestGetChatSessionHandler_NotFound(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	req := httptest.NewRequest("GET", "/chat/nonexistent", nil)
 	w := httptest.NewRecorder()
@@ -711,7 +723,7 @@ func TestGetChatSessionHandler_NotFound(t *testing.T) {
 
 func TestEndChatSessionHandler_Success(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	interview := createTestInterviewAndSession(t, router)
 
@@ -746,7 +758,7 @@ func TestEndChatSessionHandler_Success(t *testing.T) {
 
 func TestEndChatSessionHandler_NotFound(t *testing.T) {
 	clearMemoryStore()
-	router := SetupRouter()
+	router := setupTestRouter()
 
 	expectHTTPError(t, router, "POST", "/chat/nonexistent/end", nil, http.StatusNotFound)
 }

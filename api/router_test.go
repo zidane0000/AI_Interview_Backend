@@ -7,7 +7,7 @@ import (
 )
 
 func TestRouter_Interview_MethodNotAllowed(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("PUT", "/interviews", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -17,7 +17,7 @@ func TestRouter_Interview_MethodNotAllowed(t *testing.T) {
 }
 
 func TestRouter_InterviewID_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/interviews/", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -27,7 +27,7 @@ func TestRouter_InterviewID_BadRequest(t *testing.T) {
 }
 
 func TestRouter_EvaluationID_BadRequest(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("GET", "/evaluation/", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -37,7 +37,7 @@ func TestRouter_EvaluationID_BadRequest(t *testing.T) {
 }
 
 func TestRouter_Evaluation_MethodNotAllowed(t *testing.T) {
-	router := SetupRouter()
+	router := setupTestRouter()
 	req := httptest.NewRequest("PUT", "/evaluation", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)

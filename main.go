@@ -10,7 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/zidane0000/AI_Interview_Backend/ai"
 	"github.com/zidane0000/AI_Interview_Backend/api"
 	"github.com/zidane0000/AI_Interview_Backend/config"
 	"github.com/zidane0000/AI_Interview_Backend/data"
@@ -81,24 +80,16 @@ func main() {
 	// if err := data.GlobalStore.Health(); err != nil {
 	//     utils.Errorf("store health check failed: %v", err)
 	// }
-	// Initialize AI service client (global client is already initialized with .env support)
-	utils.Infof("AI client initialized with .env configuration")
 
-	// Log AI provider information for operational visibility
-	if ai.Client != nil {
-		utils.Infof("Using AI provider: %s with model: %s", ai.Client.GetCurrentProvider(), ai.Client.GetCurrentModel())
-	}
-
-	// TODO: Add AI service validation
-	// if err := ai.Client.TestConnection(); err != nil {
-	//     utils.Errorf("failed to connect to AI service: %v", err)
-	// }
+	// AI clients are now created per-request using the factory pattern
+	// No global initialization needed - clients are created by handlers as needed
+	utils.Infof("AI client factory will be used for per-request client creation")
 	// TODO: Initialize file upload directory and permissions
 	// if err := os.MkdirAll(cfg.UploadPath, 0755); err != nil {
 	//     utils.Errorf("failed to create upload directory: %v", err)
 	// }
-	// Set up router
-	router := api.SetupRouter()
+	// Set up router with injected config
+	router := api.SetupRouter(cfg)
 	// TODO: Add HTTPS support with TLS configuration
 	// TODO: Add health check endpoints
 	// TODO: Add metrics and monitoring endpoints

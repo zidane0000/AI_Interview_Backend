@@ -14,6 +14,18 @@ import (
 	"github.com/zidane0000/AI_Interview_Backend/utils"
 )
 
+// HandlerDependencies contains all dependencies needed by handlers
+type HandlerDependencies struct {
+	AIClientFactory *ai.AIClientFactory
+}
+
+// NewHandlerDependencies creates a new handler dependencies container
+func NewHandlerDependencies(aiClientFactory *ai.AIClientFactory) *HandlerDependencies {
+	return &HandlerDependencies{
+		AIClientFactory: aiClientFactory,
+	}
+}
+
 // Helper: parse integer query parameter with default value
 func parseIntQuery(r *http.Request, key string, defaultValue int) int {
 	if str := r.URL.Query().Get(key); str != "" {
@@ -197,7 +209,7 @@ func GetInterviewHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SubmitEvaluationHandler handles POST /evaluation
-func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
+func (deps *HandlerDependencies) SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 	var req SubmitEvaluationRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSONError(w, http.StatusBadRequest, "Invalid JSON", err.Error())
@@ -234,7 +246,14 @@ func SubmitEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	interviewLanguage := interview.InterviewLanguage // Use interview language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, answers, jobDesc, interviewLanguage)
+	// Create AI client for this request
+	aiClient, err := deps.AIClientFactory.CreateDefaultClient()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create AI client")
+		return
+	}
+
+	score, feedback, err := aiClient.EvaluateAnswersWithContext(questions, answers, jobDesc, interviewLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return
@@ -295,7 +314,7 @@ func GetEvaluationHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // StartChatSessionHandler handles POST /interviews/{id}/chat/start
-func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
+func (deps *HandlerDependencies) StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	interviewID := chi.URLParam(r, "id")
 	if interviewID == "" {
 		writeJSONError(w, http.StatusBadRequest, "Missing interview ID")
@@ -338,8 +357,15 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create AI client for this request
+	aiClient, err := deps.AIClientFactory.CreateDefaultClient()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create AI client")
+		return
+	}
+
 	// Generate initial AI greeting message
-	aiResponse, err := ai.Client.GenerateChatResponseWithLanguage(sessionID, []map[string]string{}, "", sessionLanguage)
+	aiResponse, err := aiClient.GenerateChatResponseWithLanguage(sessionID, []map[string]string{}, "", sessionLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
 		return
@@ -386,7 +412,7 @@ func StartChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SendMessageHandler handles POST /chat/{sessionId}/message
-func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
+func (deps *HandlerDependencies) SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "sessionId")
 	if sessionID == "" {
 		writeJSONError(w, http.StatusBadRequest, "Missing session ID")
@@ -445,6 +471,13 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create AI client for this request
+	aiClient, err := deps.AIClientFactory.CreateDefaultClient()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create AI client")
+		return
+	}
+
 	// Check if interview should end BEFORE generating AI response
 	userMessageCount := 0
 	for _, msg := range messages {
@@ -453,7 +486,7 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	shouldEndInterview := ai.Client.ShouldEndInterview(userMessageCount)
+	shouldEndInterview := aiClient.ShouldEndInterview(userMessageCount)
 
 	// Build structured conversation history excluding the current user message
 	conversationHistory := make([]map[string]string, 0)
@@ -470,9 +503,9 @@ func SendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate AI response - use closing context if interview should end
 	var aiResponse string
 	if shouldEndInterview {
-		aiResponse, err = ai.Client.GenerateClosingMessageWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
+		aiResponse, err = aiClient.GenerateClosingMessageWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
 	} else {
-		aiResponse, err = ai.Client.GenerateChatResponseWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
+		aiResponse, err = aiClient.GenerateChatResponseWithLanguage(sessionID, conversationHistory, req.Message, session.SessionLanguage)
 	}
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate AI response")
@@ -573,7 +606,7 @@ func GetChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // EndChatSessionHandler handles POST /chat/{sessionId}/end
-func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
+func (deps *HandlerDependencies) EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	sessionID := chi.URLParam(r, "sessionId")
 	if sessionID == "" {
 		writeJSONError(w, http.StatusBadRequest, "Missing session ID")
@@ -635,7 +668,14 @@ func EndChatSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	sessionLanguage := session.SessionLanguage // Use session language for evaluation
 
-	score, feedback, err := ai.Client.EvaluateAnswersWithContext(questions, userAnswers, jobDesc, sessionLanguage)
+	// Create AI client for this request
+	aiClient, err := deps.AIClientFactory.CreateDefaultClient()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to create AI client")
+		return
+	}
+
+	score, feedback, err := aiClient.EvaluateAnswersWithContext(questions, userAnswers, jobDesc, sessionLanguage)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, "Failed to generate evaluation")
 		return
